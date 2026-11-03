@@ -1,24 +1,19 @@
-import type {
-	DateString,
-	Gender,
-	Person,
-	RelationshipType,
-	MediaType,
-} from "./api/types";
+import type { DateString, Person } from "./api/types";
+import { translate } from "./i18n";
 
 export function fullName(
 	p:
 		Pick<Person, "FirstNames" | "MiddleNames" | "LastNames"> | null | undefined,
 ): string {
-	if (!p) return "Unbekannt";
+	if (!p) return translate("common.unknown");
 	return (
 		[...p.FirstNames, ...p.MiddleNames, ...p.LastNames].join(" ") ||
-		"Ohne Namen"
+		translate("common.noName")
 	);
 }
 
 export function shortName(p: Person | null | undefined): string {
-	if (!p) return "Unbekannt";
+	if (!p) return translate("common.unknown");
 	return [p.FirstNames[0], ...p.LastNames].filter(Boolean).join(" ");
 }
 
@@ -48,33 +43,6 @@ export function years(p: Person): string {
 	const d = p.DateOfDeath?.slice(0, 4) ?? "";
 	return p.DateOfBirth || p.DateOfDeath ? `${b}–${d}` : "";
 }
-
-export const GENDER_LABEL: Record<Gender, string> = {
-	Female: "weiblich",
-	Male: "männlich",
-	Diverse: "divers",
-	Unknown: "unbekannt",
-};
-
-export const RELATIONSHIP_LABEL: Record<RelationshipType, string> = {
-	Parent: "Elternteil von",
-	Child: "Kind von",
-	Spouse: "Ehepartner",
-	Partner: "Partner",
-	Sibling: "Geschwister",
-	Related: "Verwandt",
-	Other: "Sonstige",
-	Unknown: "Unbekannt",
-};
-
-export const MEDIA_LABEL: Record<MediaType, string> = {
-	Image: "Bild",
-	Video: "Video",
-	Audio: "Audio",
-	Text: "Text",
-	Document: "Dokument",
-	Other: "Datei",
-};
 
 export function formatSize(bytes: number | null): string {
 	if (!bytes) return "";

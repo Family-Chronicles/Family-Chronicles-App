@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { api } from "../lib/api/client";
 	import type { DateString, Person, Relationship } from "../lib/api/types";
 	import { formatDate } from "../lib/format";
 	import {
-		KIND_LABEL,
 		KIND_ORDER,
 		toInput,
 		viewFrom,
@@ -79,7 +79,7 @@
 			});
 			if (editing) await api.relationships.update(editing.Id, data);
 			else await api.relationships.create(data);
-			notify("Beziehung gespeichert.");
+			notify($t("relations.saved"));
 			open = false;
 			onchange();
 		} catch (e) {
@@ -91,25 +91,25 @@
 
 	async function remove(r: Relationship) {
 		await api.relationships.remove(r.Id);
-		notify("Beziehung entfernt.");
+		notify($t("relations.removed"));
 		onchange();
 	}
 
 	const period = (r: Relationship) =>
 		r.StartDate || r.EndDate
-			? `${formatDate(r.StartDate) || "?"} – ${formatDate(r.EndDate) || "heute"}`
+			? `${formatDate(r.StartDate) || "?"} – ${formatDate(r.EndDate) || $t("common.today")}`
 			: "";
 </script>
 
 <section class="card p-5">
 	<div class="mb-3 flex items-center justify-between">
-		<h2 class="text-lg font-semibold">Beziehungen</h2>
+		<h2 class="text-lg font-semibold">{$t("relations.title")}</h2>
 		{#if $canEdit}<button class="btn-secondary" onclick={openNew}
-				>+ Beziehung</button
+				>{$t("relations.add")}</button
 			>{/if}
 	</div>
 	{#if relations.length === 0}
-		<p class="text-sm text-stone-500">Noch keine Beziehungen erfasst.</p>
+		<p class="text-sm text-stone-500">{$t("relations.empty")}</p>
 	{:else}
 		<ul class="divide-y divide-bark-50">
 			{#each relations as rel (rel.relationship.Id)}
@@ -118,7 +118,7 @@
 					<span
 						class="w-28 shrink-0 text-xs font-medium tracking-wide text-stone-500 uppercase"
 					>
-						{rel.relationship.Role || KIND_LABEL[rel.kind]}
+						{rel.relationship.Role || $t(`relations.kind.${rel.kind}`)}
 					</span>
 					<div class="min-w-0 flex-1">
 						{#if other}<PersonLink
@@ -129,14 +129,15 @@
 					{#if $canEdit}
 						<button
 							class="btn-ghost text-xs"
-							onclick={() => openEdit(rel.relationship)}>Bearbeiten</button
+							onclick={() => openEdit(rel.relationship)}
+							>{$t("common.edit")}</button
 						>
 						<ConfirmButton
 							class="btn-ghost text-xs text-red-700"
-							message="Diese Beziehung wird entfernt. Die Personen bleiben erhalten."
-							confirmLabel="Entfernen"
+							message={$t("relations.removeMessage")}
+							confirmLabel={$t("common.remove")}
 							onconfirm={() => remove(rel.relationship)}
-							>Entfernen</ConfirmButton
+							>{$t("common.remove")}</ConfirmButton
 						>
 					{/if}
 				</li>
@@ -147,48 +148,53 @@
 
 <Modal
 	bind:open
-	title={editing ? "Beziehung bearbeiten" : "Beziehung hinzufügen"}
+	title={editing ? $t("relations.editTitle") : $t("relations.addTitle")}
 >
 	<div class="space-y-4">
 		<PersonPicker
 			id="rel-person"
 			bind:value={otherId}
 			exclude={[person.Id]}
-			label="Person"
+			label={$t("common.person")}
 		/>
 		<div>
 			<label class="label" for="rel-kind"
-				>… ist für {person.FirstNames[0]}</label
+				>{$t("relations.isFor", { name: person.FirstNames[0] })}</label
 			>
 			<select id="rel-kind" class="input" bind:value={kind}>
-				{#each KIND_ORDER as k (k)}<option value={k}>{KIND_LABEL[k]}</option
+				{#each KIND_ORDER as k (k)}<option value={k}
+						>{$t(`relations.kind.${k}`)}</option
 					>{/each}
 			</select>
 		</div>
 		<div>
-			<label class="label" for="rel-role">Rolle (optional)</label>
+			<label class="label" for="rel-role">{$t("common.roleOptional")}</label>
 			<input
 				id="rel-role"
 				class="input"
-				placeholder="z. B. Mutter, Stiefvater, Adoptivkind"
+				placeholder={$t("relations.roleHint")}
 				bind:value={role}
 			/>
 		</div>
 		<div class="grid gap-4 sm:grid-cols-2">
-			<DateInput id="rel-start" label="Beginn" bind:value={startDate} />
-			<DateInput id="rel-end" label="Ende" bind:value={endDate} />
+			<DateInput
+				id="rel-start"
+				label={$t("common.start")}
+				bind:value={startDate}
+			/>
+			<DateInput id="rel-end" label={$t("common.end")} bind:value={endDate} />
 		</div>
 		<div>
-			<label class="label" for="rel-notes">Notizen</label>
+			<label class="label" for="rel-notes">{$t("common.notes")}</label>
 			<textarea id="rel-notes" class="input" bind:value={notes}></textarea>
 		</div>
 	</div>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (open = false)}
-			>Abbrechen</button
+			>{$t("common.cancel")}</button
 		>
 		<button class="btn-primary" disabled={!otherId || busy} onclick={save}
-			>Speichern</button
+			>{$t("common.save")}</button
 		>
 	{/snippet}
 </Modal>

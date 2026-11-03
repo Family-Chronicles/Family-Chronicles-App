@@ -4,6 +4,14 @@ import {
 	type HttpRequestConfig,
 } from "@bquery/bquery/reactive";
 import { clearSession, getToken } from "../state/session";
+import { translate } from "../i18n";
+import { markOwnWrite } from "../state/ownWrites";
+
+const KNOWN = [400, 401, 403, 404, 409, 413, 429];
+const errorText = (status: number) =>
+	KNOWN.includes(status)
+		? translate(`errors.${status}`)
+		: translate("errors.generic", { status });
 import type {
 	ApiErrorBody,
 	Family,
@@ -36,16 +44,6 @@ export class ApiError extends Error {
 	}
 }
 
-const MESSAGES: Record<number, string> = {
-	400: "Die Eingaben sind ungültig.",
-	401: "Bitte melde dich erneut an.",
-	403: "Dafür fehlen dir die Rechte.",
-	404: "Nicht gefunden.",
-	409: "Konflikt mit vorhandenen Daten.",
-	413: "Die Datei ist zu groß.",
-	429: "Zu viele Anfragen – bitte kurz warten.",
-};
-
 const http = createHttp({ timeout: 60_000 });
 
 http.interceptors.request.use((config) => {
@@ -67,16 +65,23 @@ function toApiError(error: unknown): ApiError {
 		const server = typeof body?.message === "string" ? body.message : "";
 		const message =
 			status === 400 && Object.keys(fieldErrors).length
-				? `${MESSAGES[400]} (${Object.keys(fieldErrors).join(", ")})`
+				? `${errorText(400)} (${Object.keys(fieldErrors).join(", ")})`
 				: server && status !== 401
-					? `${MESSAGES[status] ?? "Fehler"} ${server}`.trim()
-					: (MESSAGES[status] ?? `Fehler ${status}`);
+					? `${errorText(status)} ${server}`.trim()
+					: errorText(status);
 		return new ApiError(message, status, fieldErrors);
 	}
-	return new ApiError("Der Server ist nicht erreichbar.", 0);
+	return new ApiError(translate("errors.offline"), 0);
 }
 
 async function request<T>(config: HttpRequestConfig): Promise<T> {
+	// logins and password changes do not change shared data
+	if (
+		config.method &&
+		config.method !== "GET" &&
+		!config.url?.startsWith("/auth")
+	)
+		markOwnWrite();
 	try {
 		return (await http.request<T>({ ...config, url: API_URL + config.url }))
 			.data;
@@ -168,6 +173,26 @@ export const api = {
 		update: (id: string, data: Partial<RelationshipInput>) =>
 			put<Relationship>(`/relationships/${id}`, data),
 		remove: (id: string) => del(`/relationships/${id}`),
+	},
+
+	gedcom: {
+		import: (file: File, familyName?: string) => {
+			const form = new FormData();
+			form.set("file", file);
+			return request<{
+				Persons: number;
+				Relationships: number;
+				FamilyId: string | null;
+				Warnings: string[];
+			}>({
+				url: "/gedcom/import",
+				method: "POST",
+				body: form,
+				query: familyName ? { family: familyName } : undefined,
+			});
+		},
+		export: () =>
+			request<Blob>({ url: "/gedcom/export", method: "GET", parseAs: "blob" }),
 	},
 
 	media: {

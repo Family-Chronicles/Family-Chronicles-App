@@ -6,6 +6,8 @@
 	import { href } from "../lib/router";
 	import { canEdit } from "../lib/state/session";
 	import { notifyError } from "../lib/state/toasts";
+	import { autoReload } from "../lib/state/live";
+	import { t } from "../lib/i18n";
 	import PageHeader from "../components/PageHeader.svelte";
 	import Loading from "../components/Loading.svelte";
 	import Empty from "../components/Empty.svelte";
@@ -16,7 +18,7 @@
 	let query = $state("");
 	let filter = $state<"all" | "living" | "deceased">("all");
 
-	onMount(async () => {
+	async function load() {
 		try {
 			persons = await api.persons.list();
 		} catch (e) {
@@ -24,6 +26,11 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	onMount(() => {
+		load();
+		return autoReload(["persons"], load);
 	});
 
 	const norm = (s: string) =>
@@ -38,43 +45,44 @@
 				const hay = norm(
 					`${fullName(p)} ${p.BirthName ?? ""} ${p.PlaceOfBirth ?? ""}`,
 				);
-				return terms.every((t) => hay.includes(t));
+				return terms.every((term) => hay.includes(term));
 			});
 	});
+	const filters = ["all", "living", "deceased"] as const;
 </script>
 
 <PageHeader
-	title="Personen"
-	subtitle="{persons.length} Personen in der Chronik"
+	title={$t("persons.title")}
+	subtitle={$t("persons.count", { count: persons.length })}
 >
 	{#snippet actions()}
 		{#if $canEdit}<a class="btn-primary" href={href("/persons/new")}
-				>+ Person anlegen</a
+				>{$t("persons.create")}</a
 			>{/if}
 	{/snippet}
 </PageHeader>
 
 <div class="mb-4 flex flex-wrap gap-3">
-	<label class="sr-only" for="search">Suchen</label>
+	<label class="sr-only" for="search">{$t("common.search")}</label>
 	<input
 		id="search"
 		class="input max-w-sm"
 		type="search"
-		placeholder="Name, Geburtsname oder Ort …"
+		placeholder={$t("persons.searchPlaceholder")}
 		bind:value={query}
 	/>
 	<div
 		class="inline-flex rounded-lg border border-bark-200 bg-white p-0.5 text-sm"
 		role="group"
-		aria-label="Filter"
+		aria-label={$t("persons.filter")}
 	>
-		{#each [["all", "Alle"], ["living", "Lebend"], ["deceased", "Verstorben"]] as [key, label] (key)}
+		{#each filters as key (key)}
 			<button
 				class="rounded-md px-3 py-1.5 {filter === key
 					? 'bg-bark-100 font-medium text-bark-900'
 					: 'text-stone-600'}"
 				aria-pressed={filter === key}
-				onclick={() => (filter = key as typeof filter)}>{label}</button
+				onclick={() => (filter = key)}>{$t(`persons.${key}`)}</button
 			>
 		{/each}
 	</div>
@@ -84,12 +92,10 @@
 	<Loading />
 {:else if shown.length === 0}
 	<Empty
-		message={persons.length
-			? "Keine Person passt zur Suche."
-			: "Noch keine Personen erfasst."}
+		message={persons.length ? $t("persons.noMatch") : $t("persons.empty")}
 	/>
 {:else}
-	<ul class="card divide-y divide-bark-50">
+	<ul class="card divide-y divide-bark-50" data-testid="person-list">
 		{#each shown as p (p.Id)}
 			<li>
 				<a
@@ -101,13 +107,11 @@
 						<p class="truncate font-medium text-bark-900">
 							{fullName(p)}
 							{#if p.BirthName}<span class="font-normal text-stone-500"
-									>geb. {p.BirthName}</span
+									>{$t("persons.born", { name: p.BirthName })}</span
 								>{/if}
 						</p>
 						<p class="truncate text-sm text-stone-500">
-							{lifespan(p)}{#if p.PlaceOfBirth}{lifespan(p)
-									? " · "
-									: ""}{p.PlaceOfBirth}{/if}
+							{[lifespan(p), p.PlaceOfBirth].filter(Boolean).join(" · ")}
 						</p>
 					</div>
 					<span class="text-bark-300" aria-hidden="true">›</span>

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { api } from "../lib/api/client";
 	import type { Media, MediaTag, Person } from "../lib/api/types";
-	import { formatSize, fullName, MEDIA_LABEL } from "../lib/format";
+	import { formatSize, fullName } from "../lib/format";
+	import { t } from "../lib/i18n";
 	import { href } from "../lib/router";
 	import { canEdit } from "../lib/state/session";
 	import { notify, notifyError } from "../lib/state/toasts";
@@ -60,7 +61,7 @@
 					Content: content,
 				});
 			}
-			notify("Medium gespeichert.");
+			notify($t("media.saved"));
 			uploadOpen = false;
 			onchange();
 		} catch (e) {
@@ -112,9 +113,9 @@
 		);
 	}
 
-	async function removeTag(t: MediaTag) {
+	async function removeTag(tag: MediaTag) {
 		if (!current) return;
-		await api.media.removeTag(current.Id, t.Id);
+		await api.media.removeTag(current.Id, tag.Id);
 		await reloadTags();
 		onchange();
 	}
@@ -122,7 +123,7 @@
 	async function removeMedia() {
 		if (!current) return;
 		await api.media.remove(current.Id);
-		notify("Medium gelöscht.");
+		notify($t("media.deleted"));
 		viewOpen = false;
 		onchange();
 	}
@@ -130,15 +131,15 @@
 
 <section class="card p-5">
 	<div class="mb-3 flex items-center justify-between">
-		<h2 class="text-lg font-semibold">Bilder, Videos &amp; Dokumente</h2>
+		<h2 class="text-lg font-semibold">{$t("media.title")}</h2>
 		{#if $canEdit}<button class="btn-secondary" onclick={openUpload}
-				>+ Hinzufügen</button
+				>{$t("media.add")}</button
 			>{/if}
 	</div>
 	{#if own.length === 0 && tagged.length === 0}
-		<p class="text-sm text-stone-500">Noch keine Medien vorhanden.</p>
+		<p class="text-sm text-stone-500">{$t("media.empty")}</p>
 	{/if}
-	{#each [{ list: own, label: "" }, { list: tagged, label: `Medien, auf denen ${person.FirstNames[0]} markiert ist` }] as group (group.label)}
+	{#each [{ list: own, label: "" }, { list: tagged, label: $t( "media.taggedOn", { name: person.FirstNames[0] } ) }] as group (group.label)}
 		{#if group.list.length}
 			{#if group.label}<h3 class="mt-4 mb-2 text-sm font-medium text-stone-600">
 					{group.label}
@@ -159,7 +160,7 @@
 								{m.Title}
 							</p>
 							<p class="text-xs text-stone-500">
-								{MEDIA_LABEL[m.Type]}
+								{$t(`media.type.${m.Type}`)}
 								{formatSize(m.Size)}
 							</p>
 						</button>
@@ -170,7 +171,7 @@
 	{/each}
 </section>
 
-<Modal bind:open={uploadOpen} title="Medium hinzufügen">
+<Modal bind:open={uploadOpen} title={$t("media.addTitle")}>
 	<div class="space-y-4">
 		<div
 			class="inline-flex rounded-lg border border-bark-200 p-0.5 text-sm"
@@ -181,43 +182,41 @@
 					? 'bg-bark-100 font-medium'
 					: ''}"
 				aria-pressed={mode === "file"}
-				onclick={() => (mode = "file")}>Datei</button
+				onclick={() => (mode = "file")}>{$t("media.file")}</button
 			>
 			<button
 				class="rounded-md px-3 py-1.5 {mode === 'text'
 					? 'bg-bark-100 font-medium'
 					: ''}"
 				aria-pressed={mode === "text"}
-				onclick={() => (mode = "text")}>Text</button
+				onclick={() => (mode = "text")}>{$t("media.text")}</button
 			>
 		</div>
 		{#if mode === "file"}
 			<div>
-				<label class="label" for="media-file"
-					>Datei (Bild, Video, Audio, PDF …)</label
-				>
+				<label class="label" for="media-file">{$t("media.fileLabel")}</label>
 				<input id="media-file" type="file" class="input" bind:files />
 			</div>
 		{/if}
 		<div>
 			<label class="label" for="media-title"
-				>Titel{mode === "text" ? " *" : ""}</label
+				>{$t("media.titleLabel")}{mode === "text" ? " *" : ""}</label
 			>
 			<input
 				id="media-title"
 				class="input"
 				bind:value={title}
-				placeholder={mode === "file" ? "Standard: Dateiname" : ""}
+				placeholder={mode === "file" ? $t("media.titlePlaceholder") : ""}
 			/>
 		</div>
 		<div>
-			<label class="label" for="media-desc">Beschreibung</label>
+			<label class="label" for="media-desc">{$t("common.description")}</label>
 			<textarea id="media-desc" class="input" bind:value={description}
 			></textarea>
 		</div>
 		{#if mode === "text"}
 			<div>
-				<label class="label" for="media-content">Text *</label>
+				<label class="label" for="media-content">{$t("media.textLabel")}</label>
 				<textarea
 					id="media-content"
 					class="input min-h-40 font-serif"
@@ -227,14 +226,14 @@
 	</div>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (uploadOpen = false)}
-			>Abbrechen</button
+			>{$t("common.cancel")}</button
 		>
 		<button
 			class="btn-primary"
 			disabled={busy || (mode === "file" ? !files?.length : !title || !content)}
 			onclick={upload}
 		>
-			{busy ? "Speichern …" : "Speichern"}
+			{busy ? $t("common.saving") : $t("common.save")}
 		</button>
 	{/snippet}
 </Modal>
@@ -250,11 +249,11 @@
 					onclick={placeTag}
 				>
 					<MediaFile media={current} />
-					{#each tags.filter((t) => t.X !== null && t.Y !== null) as t (t.Id)}
+					{#each tags.filter((x) => x.X !== null && x.Y !== null) as tag (tag.Id)}
 						<span
 							class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bark-800/85 px-2 py-0.5 text-xs whitespace-nowrap text-white shadow"
-							style="left: {t.X! * 100}%; top: {t.Y! * 100}%"
-							>{fullName(persons.get(t.PersonId))}</span
+							style="left: {tag.X! * 100}%; top: {tag.Y! * 100}%"
+							>{fullName(persons.get(tag.PersonId))}</span
 						>
 					{/each}
 				</div>
@@ -262,7 +261,8 @@
 						{current.Description}
 					</p>{/if}
 				<p class="mt-2 text-xs text-stone-500">
-					Gehört zu <a class="link" href={href(`/persons/${current.PersonId}`)}
+					{$t("media.belongsTo")}
+					<a class="link" href={href(`/persons/${current.PersonId}`)}
 						>{fullName(persons.get(current.PersonId))}</a
 					>
 					{#if current.FileName}· {current.FileName}
@@ -271,19 +271,20 @@
 			</div>
 			<aside class="space-y-4">
 				<div>
-					<h3 class="mb-2 text-sm font-semibold">Markierte Personen</h3>
+					<h3 class="mb-2 text-sm font-semibold">{$t("media.tagged")}</h3>
 					{#if tags.length === 0}<p class="text-sm text-stone-500">
-							Niemand markiert.
+							{$t("media.noTags")}
 						</p>{/if}
 					<ul class="space-y-1">
-						{#each tags as t (t.Id)}
+						{#each tags as tag (tag.Id)}
 							<li class="flex items-center justify-between gap-2 text-sm">
-								<a class="link truncate" href={href(`/persons/${t.PersonId}`)}
-									>{fullName(persons.get(t.PersonId))}</a
+								<a class="link truncate" href={href(`/persons/${tag.PersonId}`)}
+									>{fullName(persons.get(tag.PersonId))}</a
 								>
 								{#if $canEdit}<button
 										class="text-xs text-red-700 hover:underline"
-										onclick={() => removeTag(t)}>entfernen</button
+										onclick={() => removeTag(tag)}
+										>{$t("media.removeTag")}</button
 									>{/if}
 							</li>
 						{/each}
@@ -293,9 +294,9 @@
 					<div class="space-y-2 rounded-lg bg-bark-50 p-3">
 						<PersonPicker
 							id="tag-person"
-							label="Person markieren"
+							label={$t("media.tagPerson")}
 							bind:value={tagPerson}
-							exclude={tags.map((t) => t.PersonId)}
+							exclude={tags.map((x) => x.PersonId)}
 						/>
 						{#if current.Type === "Image"}
 							<button
@@ -303,19 +304,19 @@
 								disabled={!tagPerson}
 								onclick={() => (placing = true)}
 							>
-								{placing ? "Jetzt ins Bild klicken …" : "Im Bild platzieren"}
+								{placing ? $t("media.clickImage") : $t("media.placeInImage")}
 							</button>
 						{/if}
 						<button
 							class="btn-primary w-full"
 							disabled={!tagPerson}
-							onclick={() => addTag()}>Ohne Position markieren</button
+							onclick={() => addTag()}>{$t("media.tagWithoutPosition")}</button
 						>
 					</div>
 					<ConfirmButton
 						class="btn-ghost w-full text-red-700"
-						message="Das Medium und alle Markierungen werden gelöscht."
-						onconfirm={removeMedia}>Medium löschen</ConfirmButton
+						message={$t("media.deleteMessage")}
+						onconfirm={removeMedia}>{$t("media.deleteMedia")}</ConfirmButton
 					>
 				{/if}
 			</aside>

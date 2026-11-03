@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import type { DescendantNode } from "../lib/api/types";
 	import TreeCard from "./TreeCard.svelte";
 	import Self from "./DescendantTree.svelte";
@@ -12,7 +13,7 @@
 	<div class="flex items-center gap-2">
 		<TreeCard person={node.Person} {root} />
 		{#each node.Partners as partner (partner.Id)}
-			<span class="text-bark-400" aria-label="verbunden mit">⚭</span>
+			<span class="text-bark-400" aria-label={$t("tree.connectedWith")}>⚭</span>
 			<TreeCard person={partner} />
 		{/each}
 	</div>

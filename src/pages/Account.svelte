@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { api } from "../lib/api/client";
 	import { currentUser } from "../lib/state/session";
 	import { notify, notifyError } from "../lib/state/toasts";
@@ -14,7 +15,7 @@
 		busy = true;
 		try {
 			await api.changePassword(current, next);
-			notify("Passwort geändert.");
+			notify($t("account.changed"));
 			current = next = repeat = "";
 		} catch (err) {
 			notifyError(err);
@@ -24,30 +25,30 @@
 	}
 </script>
 
-<PageHeader title="Mein Konto" />
+<PageHeader title={$t("account.title")} />
 
 <div class="grid gap-6 lg:grid-cols-2">
 	<section class="card p-5">
-		<h2 class="mb-3 text-lg font-semibold">Profil</h2>
+		<h2 class="mb-3 text-lg font-semibold">{$t("account.profile")}</h2>
 		<dl class="space-y-2 text-sm">
 			<div>
-				<dt class="text-xs text-stone-500 uppercase">Name</dt>
+				<dt class="text-xs text-stone-500 uppercase">{$t("users.name")}</dt>
 				<dd>{$currentUser?.Name}</dd>
 			</div>
 			<div>
-				<dt class="text-xs text-stone-500 uppercase">E-Mail</dt>
+				<dt class="text-xs text-stone-500 uppercase">{$t("users.email")}</dt>
 				<dd>{$currentUser?.Email}</dd>
 			</div>
 			<div>
-				<dt class="text-xs text-stone-500 uppercase">Rolle</dt>
+				<dt class="text-xs text-stone-500 uppercase">{$t("users.role")}</dt>
 				<dd>{$currentUser?.Role}</dd>
 			</div>
 		</dl>
 	</section>
 	<form class="card space-y-4 p-5" onsubmit={submit}>
-		<h2 class="text-lg font-semibold">Passwort ändern</h2>
+		<h2 class="text-lg font-semibold">{$t("account.changePassword")}</h2>
 		<div>
-			<label class="label" for="pw-cur">Aktuelles Passwort</label><input
+			<label class="label" for="pw-cur">{$t("account.current")}</label><input
 				id="pw-cur"
 				class="input"
 				type="password"
@@ -57,7 +58,7 @@
 			/>
 		</div>
 		<div>
-			<label class="label" for="pw-new">Neues Passwort</label><input
+			<label class="label" for="pw-new">{$t("account.new")}</label><input
 				id="pw-new"
 				class="input"
 				type="password"
@@ -68,7 +69,7 @@
 			/>
 		</div>
 		<div>
-			<label class="label" for="pw-rep">Wiederholen</label>
+			<label class="label" for="pw-rep">{$t("account.repeat")}</label>
 			<input
 				id="pw-rep"
 				class="input"
@@ -78,13 +79,13 @@
 				bind:value={repeat}
 			/>
 			{#if repeat && repeat !== next}<p class="mt-1 text-xs text-red-700">
-					Die Passwörter stimmen nicht überein.
+					{$t("account.mismatch")}
 				</p>{/if}
 		</div>
 		<button
 			class="btn-primary"
 			disabled={busy || next.length < 8 || next !== repeat}
-			>Passwort ändern</button
+			>{$t("account.changePassword")}</button
 		>
 	</form>
 </div>

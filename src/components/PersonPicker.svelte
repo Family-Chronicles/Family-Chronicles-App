@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { onMount } from "svelte";
 	import { api } from "../lib/api/client";
 	import type { Person } from "../lib/api/types";
@@ -7,7 +8,7 @@
 	let {
 		value = $bindable<string | null>(null),
 		exclude = [],
-		label = "Person",
+		label,
 		id = "person-picker",
 	}: {
 		value?: string | null;
@@ -41,7 +42,7 @@
 </script>
 
 <div class="relative">
-	<label class="label" for={id}>{label}</label>
+	<label class="label" for={id}>{label ?? $t("common.person")}</label>
 	{#if selected}
 		<div
 			class="flex items-center justify-between rounded-lg border border-bark-200 bg-bark-50 px-3 py-2 text-sm"
@@ -51,14 +52,14 @@
 				<span class="text-stone-500">{years(selected)}</span></span
 			>
 			<button type="button" class="link text-xs" onclick={() => (value = null)}
-				>ändern</button
+				>{$t("common.change")}</button
 			>
 		</div>
 	{:else}
 		<input
 			{id}
 			class="input"
-			placeholder="Name eingeben …"
+			placeholder={$t("common.typeName")}
 			autocomplete="off"
 			bind:value={query}
 			onfocus={() => (focused = true)}

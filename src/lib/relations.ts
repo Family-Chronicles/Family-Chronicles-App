@@ -15,17 +15,6 @@ export type RelationKind =
 	| "Other"
 	| "Unknown";
 
-export const KIND_LABEL: Record<RelationKind, string> = {
-	Parent: "Elternteil",
-	Child: "Kind",
-	Spouse: "Ehepartner:in",
-	Partner: "Partner:in",
-	Sibling: "Geschwister",
-	Related: "Verwandt",
-	Other: "Sonstige",
-	Unknown: "Unbekannt",
-};
-
 export const KIND_ORDER: RelationKind[] = [
 	"Parent",
 	"Spouse",

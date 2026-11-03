@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
+	import { t } from "../lib/i18n";
 
 	let {
 		open = $bindable(false),
@@ -49,7 +50,7 @@
 			<button
 				class="text-stone-400 hover:text-stone-700"
 				onclick={() => (open = false)}
-				aria-label="Schließen">✕</button
+				aria-label={$t("common.close")}>✕</button
 			>
 		</div>
 		<div class="max-h-[70vh] overflow-y-auto px-6 py-4">

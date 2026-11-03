@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { onMount } from "svelte";
+	import { autoReload } from "../lib/state/live";
 	import { api } from "../lib/api/client";
 	import type {
 		DateString,
@@ -46,12 +48,15 @@
 			loading = false;
 		}
 	}
-	onMount(load);
+	onMount(() => {
+		load();
+		return autoReload(["families", "memberships", "persons"], load);
+	});
 
 	async function update(data: FamilyInput) {
 		try {
 			await api.families.update(id, data);
-			notify("Familie gespeichert.");
+			notify($t("families.saved"));
 			await load();
 		} catch (e) {
 			notifyError(e);
@@ -61,7 +66,7 @@
 
 	async function remove() {
 		await api.families.remove(id);
-		notify("Familie gelöscht.");
+		notify($t("families.deleted"));
 		go("/families");
 	}
 
@@ -78,13 +83,13 @@
 			await api.memberships.create({
 				FamilyId: id,
 				PersonId: personId,
-				Role: role || "Mitglied",
+				Role: role || $t("common.member"),
 				StartDate: startDate,
 				EndDate: endDate,
 				Notes: "",
 			});
 			addOpen = false;
-			notify("Mitglied hinzugefügt.");
+			notify($t("families.memberAdded"));
 			await load();
 		} catch (e) {
 			notifyError(e);
@@ -93,7 +98,7 @@
 
 	async function removeMember(m: Membership) {
 		await api.memberships.remove(m.Id);
-		notify("Mitglied entfernt.");
+		notify($t("families.memberRemoved"));
 		await load();
 	}
 </script>
@@ -102,25 +107,24 @@
 	<Loading />
 {:else if !family}
 	<p class="text-stone-600">
-		Diese Familie existiert nicht. <a class="link" href={href("/families")}
-			>Zur Übersicht</a
-		>
+		{$t("families.missing")}
+		<a class="link" href={href("/families")}>{$t("common.toOverview")}</a>
 	</p>
 {:else}
 	<PageHeader
-		title="Familie {family.Name}"
+		title={$t("families.heading", { name: family.Name })}
 		subtitle={family.HistoricalNames.length
-			? `auch: ${family.HistoricalNames.join(", ")}`
+			? $t("families.also", { names: family.HistoricalNames.join(", ") })
 			: undefined}
 	>
 		{#snippet actions()}
 			{#if $canEdit}
 				<button class="btn-secondary" onclick={() => (formOpen = true)}
-					>Bearbeiten</button
+					>{$t("common.edit")}</button
 				>
 				<ConfirmButton
-					message="Die Familie {family?.Name} wird gelöscht. Die Personen bleiben erhalten."
-					onconfirm={remove}>Löschen</ConfirmButton
+					message={$t("families.deleteMessage", { name: family?.Name ?? "" })}
+					onconfirm={remove}>{$t("common.delete")}</ConfirmButton
 				>
 			{/if}
 		{/snippet}
@@ -133,7 +137,7 @@
 				</p>{/if}
 			<div>
 				<h2 class="mb-2 text-xs tracking-wide text-stone-500 uppercase">
-					Nachnamen der Mitglieder
+					{$t("families.surnames")}
 				</h2>
 				<div class="flex flex-wrap gap-1">
 					{#each family.Surnames ?? [] as n (n)}<span class="chip">{n}</span
@@ -143,7 +147,7 @@
 			{#if family.Notes}
 				<div>
 					<h2 class="mb-1 text-xs tracking-wide text-stone-500 uppercase">
-						Notizen
+						{$t("common.notes")}
 					</h2>
 					<p class="text-sm whitespace-pre-wrap">{family.Notes}</p>
 				</div>
@@ -152,13 +156,15 @@
 
 		<section class="card p-5 lg:col-span-2">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-lg font-semibold">Mitglieder ({members.length})</h2>
+				<h2 class="text-lg font-semibold">
+					{$t("families.membersTitle", { count: members.length })}
+				</h2>
 				{#if $canEdit}<button class="btn-secondary" onclick={openAdd}
-						>+ Mitglied</button
+						>{$t("families.addMember")}</button
 					>{/if}
 			</div>
 			{#if members.length === 0}
-				<p class="text-sm text-stone-500">Noch keine Mitglieder.</p>
+				<p class="text-sm text-stone-500">{$t("families.noMembers")}</p>
 			{:else}
 				<ul class="grid gap-1 sm:grid-cols-2">
 					{#each members as m (m.Id)}
@@ -168,17 +174,17 @@
 									<PersonLink
 										person={m.Person}
 										sub="{m.Role}{m.StartDate || m.EndDate
-											? ` · ${formatDate(m.StartDate) || '?'} – ${formatDate(m.EndDate) || 'heute'}`
+											? ` · ${formatDate(m.StartDate) || '?'} – ${formatDate(m.EndDate) || $t('common.today')}`
 											: ''}"
 									/>
 								</div>
 								{#if $canEdit}
 									<ConfirmButton
 										class="btn-ghost text-xs text-red-700"
-										message="Die Person wird aus der Familie entfernt."
-										confirmLabel="Entfernen"
+										message={$t("families.removeMemberMessage")}
+										confirmLabel={$t("common.remove")}
 										onconfirm={() => removeMember(m)}
-										>✕<span class="sr-only">Entfernen</span></ConfirmButton
+										>✕<span class="sr-only">{$t("common.remove")}</span></ConfirmButton
 									>
 								{/if}
 							</li>
@@ -191,7 +197,7 @@
 
 	<FamilyForm bind:open={formOpen} {family} onsave={update} />
 
-	<Modal bind:open={addOpen} title="Mitglied hinzufügen" size="sm">
+	<Modal bind:open={addOpen} title={$t("families.addMemberTitle")} size="sm">
 		<div class="space-y-4">
 			<PersonPicker
 				id="member-person"
@@ -199,25 +205,33 @@
 				exclude={members.map((m) => m.PersonId)}
 			/>
 			<div>
-				<label class="label" for="member-role">Rolle</label>
+				<label class="label" for="member-role">{$t("common.role")}</label>
 				<input
 					id="member-role"
 					class="input"
-					placeholder="z. B. Mutter, Sohn, Stiefkind"
+					placeholder={$t("common.roleHint")}
 					bind:value={role}
 				/>
 			</div>
 			<div class="grid gap-4 sm:grid-cols-2">
-				<DateInput id="member-start" label="Seit" bind:value={startDate} />
-				<DateInput id="member-end" label="Bis" bind:value={endDate} />
+				<DateInput
+					id="member-start"
+					label={$t("common.since")}
+					bind:value={startDate}
+				/>
+				<DateInput
+					id="member-end"
+					label={$t("common.until")}
+					bind:value={endDate}
+				/>
 			</div>
 		</div>
 		{#snippet footer()}
 			<button class="btn-secondary" onclick={() => (addOpen = false)}
-				>Abbrechen</button
+				>{$t("common.cancel")}</button
 			>
 			<button class="btn-primary" disabled={!personId} onclick={addMember}
-				>Hinzufügen</button
+				>{$t("common.add")}</button
 			>
 		{/snippet}
 	</Modal>

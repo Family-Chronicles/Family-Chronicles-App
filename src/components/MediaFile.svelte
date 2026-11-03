@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { api } from "../lib/api/client";
 	import type { Media } from "../lib/api/types";
-	import { MEDIA_LABEL } from "../lib/format";
 
 	/** Loads a protected media file with the auth token and shows it */
 	let { media, thumb = false }: { media: Media; thumb?: boolean } = $props();
@@ -73,12 +73,12 @@
 						: "▤"}
 		</span>
 		<span class="text-xs"
-			>{failed ? "Nicht ladbar" : MEDIA_LABEL[media.Type]}</span
+			>{failed ? $t("media.notLoadable") : $t(`media.type.${media.Type}`)}</span
 		>
 		{#if !thumb && url}<a
 				class="link text-sm"
 				href={url}
-				download={media.FileName}>Herunterladen</a
+				download={media.FileName}>{$t("media.download")}</a
 			>{/if}
 	</div>
 {/if}

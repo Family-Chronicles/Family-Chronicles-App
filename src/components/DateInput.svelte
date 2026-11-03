@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import type { DateString } from "../lib/api/types";
 	import { formatDate, parseDateInput } from "../lib/format";
 
@@ -24,7 +25,7 @@
 		{id}
 		class="input"
 		class:border-red-500={invalid}
-		placeholder="TT.MM.JJJJ, MM.JJJJ oder JJJJ"
+		placeholder={$t("date.placeholder")}
 		bind:value={text}
 		oninput={commit}
 		aria-invalid={invalid}
@@ -32,7 +33,7 @@
 	/>
 	{#if invalid}
 		<p id="{id}-error" class="mt-1 text-xs text-red-700">
-			Bitte z. B. 12.04.1901, 04.1901 oder 1901 eingeben.
+			{$t("date.invalid")}
 		</p>
 	{/if}
 </div>

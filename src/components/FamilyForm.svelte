@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import type { Family, FamilyInput } from "../lib/api/types";
 	import Modal from "./Modal.svelte";
 
@@ -46,36 +47,41 @@
 	}
 </script>
 
-<Modal bind:open title={family ? "Familie bearbeiten" : "Neue Familie"}>
+<Modal
+	bind:open
+	title={family ? $t("families.editTitle") : $t("families.newTitle")}
+>
 	<div class="space-y-4">
 		<div>
-			<label class="label" for="fam-name">Name *</label>
+			<label class="label" for="fam-name">{$t("families.name")}</label>
 			<input id="fam-name" class="input" bind:value={name} />
 		</div>
 		<div>
-			<label class="label" for="fam-hist">Historische Namen</label>
+			<label class="label" for="fam-hist"
+				>{$t("families.historicalNames")}</label
+			>
 			<input
 				id="fam-hist"
 				class="input"
-				placeholder="kommagetrennt, z. B. Schmitt, Schmid"
+				placeholder={$t("families.historicalHint")}
 				bind:value={historical}
 			/>
 		</div>
 		<div>
-			<label class="label" for="fam-desc">Beschreibung</label>
+			<label class="label" for="fam-desc">{$t("common.description")}</label>
 			<textarea id="fam-desc" class="input" bind:value={description}></textarea>
 		</div>
 		<div>
-			<label class="label" for="fam-notes">Notizen</label>
+			<label class="label" for="fam-notes">{$t("common.notes")}</label>
 			<textarea id="fam-notes" class="input" bind:value={notes}></textarea>
 		</div>
 	</div>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (open = false)}
-			>Abbrechen</button
+			>{$t("common.cancel")}</button
 		>
 		<button class="btn-primary" disabled={!name.trim() || busy} onclick={save}
-			>Speichern</button
+			>{$t("common.save")}</button
 		>
 	{/snippet}
 </Modal>

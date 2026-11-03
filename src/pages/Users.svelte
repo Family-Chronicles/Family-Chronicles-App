@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { onMount } from "svelte";
+	import { autoReload } from "../lib/state/live";
 	import { api } from "../lib/api/client";
 	import { ROLES, type Role, type User } from "../lib/api/types";
 	import { currentUser, updateUser } from "../lib/state/session";
@@ -8,12 +10,6 @@
 	import Loading from "../components/Loading.svelte";
 	import Modal from "../components/Modal.svelte";
 	import ConfirmButton from "../components/ConfirmButton.svelte";
-
-	const ROLE_INFO: Record<Role, string> = {
-		Viewer: "Leser – darf Personen und Familien ansehen",
-		Editor: "Editor – darf zusätzlich Personen, Familien und Medien bearbeiten",
-		Admin: "Admin – voller Zugriff inkl. Benutzerverwaltung",
-	};
 
 	let users = $state<User[]>([]);
 	let loading = $state(true);
@@ -36,7 +32,10 @@
 			loading = false;
 		}
 	}
-	onMount(load);
+	onMount(() => {
+		load();
+		return autoReload(["users"], load);
+	});
 
 	function openForm(u: User | null) {
 		editing = u;
@@ -66,7 +65,7 @@
 					Role: role,
 				});
 			}
-			notify("Benutzer gespeichert.");
+			notify($t("users.saved"));
 			open = false;
 			await load();
 		} catch (e) {
@@ -79,7 +78,7 @@
 	async function remove(u: User) {
 		try {
 			await api.users.remove(u.Id);
-			notify("Benutzer gelöscht.");
+			notify($t("users.deleted"));
 			await load();
 		} catch (e) {
 			notifyError(e);
@@ -87,12 +86,9 @@
 	}
 </script>
 
-<PageHeader
-	title="Benutzer"
-	subtitle="Wer darf die Chronik lesen und bearbeiten?"
->
+<PageHeader title={$t("users.title")} subtitle={$t("users.subtitle")}>
 	{#snippet actions()}<button class="btn-primary" onclick={() => openForm(null)}
-			>+ Benutzer anlegen</button
+			>{$t("users.create")}</button
 		>{/snippet}
 </PageHeader>
 
@@ -105,9 +101,11 @@
 				class="border-b border-bark-100 text-xs tracking-wide text-stone-500 uppercase"
 			>
 				<tr
-					><th class="px-4 py-3">Name</th><th class="px-4 py-3">E-Mail</th><th
-						class="px-4 py-3">Rolle</th
-					><th class="px-4 py-3"><span class="sr-only">Aktionen</span></th></tr
+					><th class="px-4 py-3">{$t("users.name")}</th><th class="px-4 py-3"
+						>{$t("users.email")}</th
+					><th class="px-4 py-3">{$t("users.role")}</th><th class="px-4 py-3"
+						><span class="sr-only">{$t("users.actions")}</span></th
+					></tr
 				>
 			</thead>
 			<tbody class="divide-y divide-bark-50">
@@ -115,20 +113,21 @@
 					<tr>
 						<td class="px-4 py-3 font-medium text-bark-900"
 							>{u.Name}{#if u.Id === $currentUser?.Id}<span class="ml-2 chip"
-									>du</span
+									>{$t("common.you")}</span
 								>{/if}</td
 						>
 						<td class="px-4 py-3">{u.Email}</td>
 						<td class="px-4 py-3"><span class="chip">{u.Role}</span></td>
 						<td class="px-4 py-3 text-right whitespace-nowrap">
 							<button class="btn-ghost text-xs" onclick={() => openForm(u)}
-								>Bearbeiten</button
+								>{$t("common.edit")}</button
 							>
 							{#if u.Id !== $currentUser?.Id}
 								<ConfirmButton
 									class="btn-ghost text-xs text-red-700"
-									message="{u.Name} verliert den Zugang zur Chronik."
-									onconfirm={() => remove(u)}>Löschen</ConfirmButton
+									message={$t("users.deleteMessage", { name: u.Name })}
+									onconfirm={() => remove(u)}
+									>{$t("common.delete")}</ConfirmButton
 								>
 							{/if}
 						</td>
@@ -141,19 +140,19 @@
 
 <Modal
 	bind:open
-	title={editing ? "Benutzer bearbeiten" : "Neuer Benutzer"}
+	title={editing ? $t("users.editTitle") : $t("users.newTitle")}
 	size="sm"
 >
 	<div class="space-y-4">
 		<div>
-			<label class="label" for="u-name">Name</label><input
+			<label class="label" for="u-name">{$t("users.name")}</label><input
 				id="u-name"
 				class="input"
 				bind:value={name}
 			/>
 		</div>
 		<div>
-			<label class="label" for="u-email">E-Mail</label><input
+			<label class="label" for="u-email">{$t("users.email")}</label><input
 				id="u-email"
 				class="input"
 				type="email"
@@ -162,7 +161,7 @@
 		</div>
 		<div>
 			<label class="label" for="u-pass"
-				>{editing ? "Neues Passwort (optional)" : "Passwort"}</label
+				>{editing ? $t("users.newPassword") : $t("users.password")}</label
 			>
 			<input
 				id="u-pass"
@@ -172,10 +171,10 @@
 				minlength="8"
 				bind:value={password}
 			/>
-			<p class="mt-1 text-xs text-stone-500">Mindestens 8 Zeichen.</p>
+			<p class="mt-1 text-xs text-stone-500">{$t("users.passwordHint")}</p>
 		</div>
 		<fieldset>
-			<legend class="label">Rolle</legend>
+			<legend class="label">{$t("users.role")}</legend>
 			<div class="space-y-2">
 				{#each ROLES as r (r)}
 					<label class="flex items-start gap-2 text-sm">
@@ -186,7 +185,7 @@
 							bind:group={role}
 							class="mt-1 accent-bark-700"
 						/>
-						<span>{ROLE_INFO[r]}</span>
+						<span>{$t(`users.roles.${r}`)}</span>
 					</label>
 				{/each}
 			</div>
@@ -194,12 +193,12 @@
 	</div>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (open = false)}
-			>Abbrechen</button
+			>{$t("common.cancel")}</button
 		>
 		<button
 			class="btn-primary"
 			disabled={busy || !name || !email || (!editing && password.length < 8)}
-			onclick={save}>Speichern</button
+			onclick={save}>{$t("common.save")}</button
 		>
 	{/snippet}
 </Modal>
