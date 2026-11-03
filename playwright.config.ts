@@ -40,7 +40,8 @@ export default defineConfig({
 		},
 		{
 			// a second instance, for the federation test
-			command: "node dist/server.js",
+			// waits for the build of the first server command
+			command: "sh -c 'until [ -f dist/server.js ]; do sleep 1; done; node dist/server.js'",
 			cwd: SERVER_DIR,
 			url: "http://localhost:8081/api/v1/health",
 			reuseExistingServer: !process.env.CI,
