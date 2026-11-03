@@ -13,47 +13,73 @@
 	import Empty from "../components/Empty.svelte";
 	import Avatar from "../components/Avatar.svelte";
 
+	const PAGE_SIZE = 50;
+
 	let persons = $state<Person[]>([]);
+	let total = $state(0);
+	let everything = $state(0);
 	let loading = $state(true);
+	let loadingMore = $state(false);
 	let query = $state("");
 	let filter = $state<"all" | "living" | "deceased">("all");
+	const filters = ["all", "living", "deceased"] as const;
 
-	async function load() {
+	/** Only the newest request may write results (typing fires several) */
+	let requestId = 0;
+
+	async function load(append = false) {
+		const id = ++requestId;
+		const offset = append ? persons.length : 0;
 		try {
-			persons = await api.persons.list();
+			const page = await api.persons.search({
+				q: query.trim(),
+				living: filter === "all" ? undefined : filter === "living",
+				limit: append ? PAGE_SIZE : Math.max(PAGE_SIZE, persons.length),
+				offset,
+			});
+			if (id !== requestId) return;
+			persons = append ? [...persons, ...page.items] : page.items;
+			total = page.total;
+			if (!query.trim() && filter === "all") everything = page.total;
 		} catch (e) {
 			notifyError(e);
 		} finally {
 			loading = false;
+			loadingMore = false;
 		}
 	}
 
-	onMount(() => {
-		load();
-		return autoReload(["persons"], load);
+	async function loadMore() {
+		loadingMore = true;
+		await load(true);
+	}
+
+	// search on the server, slightly delayed while typing
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let first = true;
+	$effect(() => {
+		void query;
+		void filter;
+		if (first) {
+			first = false;
+			return;
+		}
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			persons = [];
+			load();
+		}, 250);
 	});
 
-	const norm = (s: string) =>
-		s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-	let shown = $derived.by(() => {
-		const terms = norm(query).split(/\s+/).filter(Boolean);
-		return persons
-			.filter(
-				(p) => filter === "all" || (filter === "living") === !p.DateOfDeath,
-			)
-			.filter((p) => {
-				const hay = norm(
-					`${fullName(p)} ${p.BirthName ?? ""} ${p.PlaceOfBirth ?? ""}`,
-				);
-				return terms.every((term) => hay.includes(term));
-			});
+	onMount(() => {
+		load();
+		return autoReload(["persons"], () => load());
 	});
-	const filters = ["all", "living", "deceased"] as const;
 </script>
 
 <PageHeader
 	title={$t("persons.title")}
-	subtitle={$t("persons.count", { count: persons.length })}
+	subtitle={$t("persons.count", { count: everything })}
 >
 	{#snippet actions()}
 		{#if $canEdit}<a class="btn-primary" href={href("/persons/new")}
@@ -90,13 +116,11 @@
 
 {#if loading}
 	<Loading />
-{:else if shown.length === 0}
-	<Empty
-		message={persons.length ? $t("persons.noMatch") : $t("persons.empty")}
-	/>
+{:else if persons.length === 0}
+	<Empty message={everything ? $t("persons.noMatch") : $t("persons.empty")} />
 {:else}
 	<ul class="card divide-y divide-bark-50" data-testid="person-list">
-		{#each shown as p (p.Id)}
+		{#each persons as p (p.Id)}
 			<li>
 				<a
 					href={href(`/persons/${p.Id}`)}
@@ -119,4 +143,14 @@
 			</li>
 		{/each}
 	</ul>
+	<div class="mt-4 flex items-center justify-between text-sm text-stone-500">
+		<span data-testid="person-count-shown"
+			>{$t("persons.showing", { shown: persons.length, total })}</span
+		>
+		{#if persons.length < total}
+			<button class="btn-secondary" disabled={loadingMore} onclick={loadMore}
+				>{$t("persons.loadMore")}</button
+			>
+		{/if}
+	</div>
 {/if}

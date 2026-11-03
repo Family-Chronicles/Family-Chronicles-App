@@ -184,7 +184,8 @@
 										message={$t("families.removeMemberMessage")}
 										confirmLabel={$t("common.remove")}
 										onconfirm={() => removeMember(m)}
-										>✕<span class="sr-only">{$t("common.remove")}</span></ConfirmButton
+										>✕<span class="sr-only">{$t("common.remove")}</span
+										></ConfirmButton
 									>
 								{/if}
 							</li>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import { api } from "../lib/api/client";
 	import { setSession } from "../lib/state/session";
 	import { LOCALES, locale, setLocale, t, type Locale } from "../lib/i18n";
@@ -8,13 +9,37 @@
 	let error = $state("");
 	let busy = $state(false);
 
+	// "forgot password" is only offered when the server can send mails
+	let resetAvailable = $state(false);
+	let mode = $state<"login" | "forgot" | "sent">("login");
+	onMount(() => {
+		api
+			.authConfig()
+			.then((c) => (resetAvailable = c.passwordReset))
+			.catch(() => undefined);
+	});
+
+	async function requestReset(e: SubmitEvent) {
+		e.preventDefault();
+		busy = true;
+		error = "";
+		try {
+			await api.requestPasswordReset(email);
+			mode = "sent";
+		} catch (err) {
+			error = (err as Error).message;
+		} finally {
+			busy = false;
+		}
+	}
+
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		busy = true;
 		error = "";
 		try {
-			const { token, user } = await api.login(email, password);
-			setSession(token, user);
+			const { token, refreshToken, user } = await api.login(email, password);
+			setSession(token, user, refreshToken);
 		} catch (err) {
 			error =
 				(err as { status?: number }).status === 401
@@ -37,39 +62,86 @@
 			</h1>
 			<p class="mt-1 text-stone-600">{$t("app.tagline")}</p>
 		</div>
-		<form class="card space-y-4 p-6" onsubmit={submit}>
-			<div>
-				<label class="label" for="email">{$t("login.email")}</label>
-				<input
-					id="email"
-					class="input"
-					type="email"
-					autocomplete="username"
-					required
-					bind:value={email}
-				/>
-			</div>
-			<div>
-				<label class="label" for="password">{$t("login.password")}</label>
-				<input
-					id="password"
-					class="input"
-					type="password"
-					autocomplete="current-password"
-					required
-					bind:value={password}
-				/>
-			</div>
-			{#if error}<p
-					class="rounded-lg bg-red-50 p-3 text-sm text-red-800"
-					role="alert"
+		{#if mode === "login"}
+			<form class="card space-y-4 p-6" onsubmit={submit}>
+				<div>
+					<label class="label" for="email">{$t("login.email")}</label>
+					<input
+						id="email"
+						class="input"
+						type="email"
+						autocomplete="username"
+						required
+						bind:value={email}
+					/>
+				</div>
+				<div>
+					<label class="label" for="password">{$t("login.password")}</label>
+					<input
+						id="password"
+						class="input"
+						type="password"
+						autocomplete="current-password"
+						required
+						bind:value={password}
+					/>
+				</div>
+				{#if error}<p
+						class="rounded-lg bg-red-50 p-3 text-sm text-red-800"
+						role="alert"
+					>
+						{error}
+					</p>{/if}
+				{#if resetAvailable}
+					<button
+						type="button"
+						class="link text-sm"
+						onclick={() => ((mode = "forgot"), (error = ""))}
+						>{$t("reset.forgot")}</button
+					>
+				{/if}
+				<button class="btn-primary w-full" disabled={busy}
+					>{busy ? $t("login.submitting") : $t("login.submit")}</button
 				>
-					{error}
-				</p>{/if}
-			<button class="btn-primary w-full" disabled={busy}
-				>{busy ? $t("login.submitting") : $t("login.submit")}</button
-			>
-		</form>
+			</form>
+		{:else if mode === "forgot"}
+			<form class="card space-y-4 p-6" onsubmit={requestReset}>
+				<h2 class="text-lg font-semibold">{$t("reset.requestTitle")}</h2>
+				<p class="text-sm text-stone-600">{$t("reset.requestHint")}</p>
+				<div>
+					<label class="label" for="reset-email">{$t("login.email")}</label>
+					<input
+						id="reset-email"
+						class="input"
+						type="email"
+						autocomplete="username"
+						required
+						bind:value={email}
+					/>
+				</div>
+				{#if error}<p
+						class="rounded-lg bg-red-50 p-3 text-sm text-red-800"
+						role="alert"
+					>
+						{error}
+					</p>{/if}
+				<button class="btn-primary w-full" disabled={busy}
+					>{$t("reset.send")}</button
+				>
+				<button
+					type="button"
+					class="link text-sm"
+					onclick={() => (mode = "login")}>{$t("reset.back")}</button
+				>
+			</form>
+		{:else}
+			<div class="card space-y-4 p-6" role="status">
+				<p class="text-sm">{$t("reset.sent")}</p>
+				<button class="link text-sm" onclick={() => (mode = "login")}
+					>{$t("reset.back")}</button
+				>
+			</div>
+		{/if}
 		<div
 			class="mt-4 flex justify-center gap-2 text-sm"
 			role="group"

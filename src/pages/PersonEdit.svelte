@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { api, ApiError } from "../lib/api/client";
-	import { GENDERS, type Gender, type PersonInput } from "../lib/api/types";
+	import {
+		GENDERS,
+		type Gender,
+		type PersonEvent,
+		type PersonInput,
+		type Source,
+	} from "../lib/api/types";
 	import { splitNames } from "../lib/format";
 	import { go, href } from "../lib/router";
 	import { notify, notifyError } from "../lib/state/toasts";
@@ -9,6 +15,8 @@
 	import PageHeader from "../components/PageHeader.svelte";
 	import DateInput from "../components/DateInput.svelte";
 	import Loading from "../components/Loading.svelte";
+	import EventsEditor from "../components/EventsEditor.svelte";
+	import SourcesEditor from "../components/SourcesEditor.svelte";
 
 	let { params }: { params: Record<string, string> } = $props();
 	const id = $derived(params.id);
@@ -28,6 +36,8 @@
 	let placeOfDeath = $state("");
 	let causeOfDeath = $state("");
 	let notes = $state("");
+	let events = $state<PersonEvent[]>([]);
+	let sources = $state<Source[]>([]);
 
 	onMount(async () => {
 		if (!id) {
@@ -47,6 +57,8 @@
 			placeOfDeath = p.PlaceOfDeath ?? "";
 			causeOfDeath = p.CauseOfDeath ?? "";
 			notes = p.Notes;
+			events = p.Events ?? [];
+			sources = p.Sources ?? [];
 		} catch (e) {
 			notifyError(e);
 		} finally {
@@ -72,6 +84,8 @@
 			PlaceOfDeath: orNull(placeOfDeath),
 			CauseOfDeath: orNull(causeOfDeath),
 			Notes: notes,
+			Events: events,
+			Sources: sources.filter((x) => x.Title.trim()),
 		};
 		try {
 			const saved = id
@@ -159,6 +173,9 @@
 				<input id="cod" class="input" bind:value={causeOfDeath} />
 			</div>
 		</fieldset>
+
+		<EventsEditor bind:events />
+		<SourcesEditor bind:sources />
 
 		<div>
 			<label class="label" for="notes">{$t("common.notes")}</label>

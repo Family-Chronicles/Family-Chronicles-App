@@ -5,6 +5,7 @@
 		Media,
 		Membership,
 		Person,
+		PersonLinkEntry,
 		Relationship,
 	} from "../lib/api/types";
 	import { formatDate, fullName } from "../lib/format";
@@ -19,6 +20,8 @@
 	import RelationshipsSection from "../components/RelationshipsSection.svelte";
 	import FamiliesSection from "../components/FamiliesSection.svelte";
 	import MediaSection from "../components/MediaSection.svelte";
+	import LifeSection from "../components/LifeSection.svelte";
+	import LinksSection from "../components/LinksSection.svelte";
 
 	let { params }: { params: Record<string, string> } = $props();
 	const id = $derived(params.id);
@@ -31,17 +34,25 @@
 		Tagged: [],
 	});
 	let persons = $state(new Map<string, Person>());
+	let links = $state<PersonLinkEntry[]>([]);
 	let loading = $state(true);
 	let missing = $state(false);
 
 	async function load() {
 		try {
-			const [p, rels, mems, med, all] = await Promise.all([
+			const [p, rels, mems, med, lnk] = await Promise.all([
 				api.persons.get(id),
 				api.persons.relationships(id),
 				api.persons.families(id),
 				api.persons.media(id),
-				api.persons.list(),
+				api.federation.links(id),
+			]);
+			links = lnk;
+			// load only the persons this page shows (relatives, owners of tagged media)
+			const all = await api.persons.byIds([
+				p.Id,
+				...rels.flatMap((r) => [r.PersonId, r.RelatedPersonId]),
+				...med.Tagged.map((m) => m.PersonId),
 			]);
 			person = p;
 			relationships = rels;
@@ -60,7 +71,15 @@
 	onMount(() => {
 		load();
 		return autoReload(
-			["persons", "relationships", "memberships", "families", "media", "tags"],
+			[
+				"persons",
+				"relationships",
+				"memberships",
+				"families",
+				"media",
+				"tags",
+				"links",
+			],
 			load,
 		);
 	});
@@ -143,6 +162,7 @@
 					<p class="text-sm whitespace-pre-wrap">{person.Notes}</p>
 				{/if}
 			</section>
+			<LifeSection {person} />
 			<FamiliesSection {person} {memberships} onchange={load} />
 		</div>
 		<div class="space-y-6 lg:col-span-2">
@@ -152,6 +172,7 @@
 				{persons}
 				onchange={load}
 			/>
+			<LinksSection {person} {links} onchange={load} />
 			<MediaSection
 				{person}
 				own={media.Own}

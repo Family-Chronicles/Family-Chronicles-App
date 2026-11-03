@@ -3,7 +3,12 @@ import {
 	HttpError,
 	type HttpRequestConfig,
 } from "@bquery/bquery/reactive";
-import { clearSession, getToken } from "../state/session";
+import {
+	clearSession,
+	getRefreshToken,
+	getToken,
+	setSession,
+} from "../state/session";
 import { translate } from "../i18n";
 import { markOwnWrite } from "../state/ownWrites";
 
@@ -13,6 +18,11 @@ const errorText = (status: number) =>
 		? translate(`errors.${status}`)
 		: translate("errors.generic", { status });
 import type {
+	ApiToken,
+	LinkRelation,
+	Peer,
+	PersonLinkEntry,
+	RemotePerson,
 	ApiErrorBody,
 	Family,
 	FamilyInput,
@@ -60,7 +70,6 @@ function toApiError(error: unknown): ApiError {
 	if (error instanceof HttpError && error.response) {
 		const status = error.response.status;
 		const body = error.response.data as Partial<ApiErrorBody> | undefined;
-		if (status === 401 && getToken()) clearSession();
 		const fieldErrors = body?.details?.fieldErrors ?? {};
 		const server = typeof body?.message === "string" ? body.message : "";
 		const message =
@@ -75,19 +84,57 @@ function toApiError(error: unknown): ApiError {
 }
 
 async function request<T>(config: HttpRequestConfig): Promise<T> {
+	return (await requestFull<T>(config)).data;
+}
+
+/** Like request, but also returns the response headers */
+async function requestFull<T>(
+	config: HttpRequestConfig,
+	retried = false,
+): Promise<{ data: T; headers: Headers }> {
+	const isAuth = config.url?.startsWith("/auth") ?? false;
 	// logins and password changes do not change shared data
-	if (
-		config.method &&
-		config.method !== "GET" &&
-		!config.url?.startsWith("/auth")
-	)
-		markOwnWrite();
+	if (config.method && config.method !== "GET" && !isAuth) markOwnWrite();
 	try {
-		return (await http.request<T>({ ...config, url: API_URL + config.url }))
-			.data;
+		const response = await http.request<T>({
+			...config,
+			url: API_URL + config.url,
+		});
+		return { data: response.data, headers: response.headers };
 	} catch (error) {
-		throw toApiError(error);
+		const apiError = toApiError(error);
+		// expired access token: get a new one with the refresh token and try once more
+		if (apiError.status === 401 && !isAuth && getToken()) {
+			if (!retried && (await refreshSession()))
+				return requestFull<T>(config, true);
+			clearSession();
+		}
+		throw apiError;
 	}
+}
+
+let refreshing: Promise<boolean> | null = null;
+
+/**
+ * Exchanges the refresh token for a new access token.
+ * Parallel callers share one request, because the refresh token is replaced each time.
+ */
+export function refreshSession(): Promise<boolean> {
+	const refreshToken = getRefreshToken();
+	if (!refreshToken) return Promise.resolve(false);
+	refreshing ??= http
+		.request<{ token: string; refreshToken: string; user: User }>({
+			url: `${API_URL}/auth/refresh`,
+			method: "POST",
+			body: { RefreshToken: refreshToken },
+		})
+		.then(({ data }) => {
+			setSession(data.token, data.user, data.refreshToken);
+			return true;
+		})
+		.catch(() => false)
+		.finally(() => (refreshing = null));
+	return refreshing;
 }
 
 const get = <T>(url: string, query?: Record<string, unknown>) =>
@@ -99,14 +146,45 @@ const put = <T>(url: string, body: unknown) =>
 const del = (url: string) =>
 	request<{ success: boolean }>({ url, method: "DELETE" });
 
+export interface PersonQuery {
+	q?: string;
+	living?: boolean;
+	born?: string;
+	limit?: number;
+	offset?: number;
+}
+
+export interface Stats {
+	Persons: number;
+	Families: number;
+	Living: number;
+	Recent: Person[];
+	Birthdays: Person[];
+}
+
 export const api = {
+	stats: () => get<Stats>("/stats"),
 	login: (Email: string, Password: string) =>
-		post<{ token: string; user: User }>("/auth/login", { Email, Password }),
+		post<{ token: string; refreshToken: string; user: User }>("/auth/login", {
+			Email,
+			Password,
+		}),
+	logout: (RefreshToken: string) =>
+		post<{ success: boolean }>("/auth/logout", { RefreshToken }),
+	authConfig: () => get<{ passwordReset: boolean }>("/auth/config"),
+	requestPasswordReset: (Email: string) =>
+		post<{ success: boolean }>("/auth/password-reset", { Email }),
+	confirmPasswordReset: (Token: string, NewPassword: string) =>
+		post<{ success: boolean }>("/auth/password-reset/confirm", {
+			Token,
+			NewPassword,
+		}),
 	me: () => get<User>("/auth/me"),
 	changePassword: (CurrentPassword: string, NewPassword: string) =>
 		put<{ success: boolean }>("/auth/me/password", {
 			CurrentPassword,
 			NewPassword,
+			RefreshToken: getRefreshToken() ?? undefined,
 		}),
 
 	users: {
@@ -130,7 +208,30 @@ export const api = {
 	},
 
 	persons: {
-		list: (q?: string) => get<Person[]>("/persons", q ? { q } : undefined),
+		/** One page of persons plus the total number of matches */
+		search: async (
+			params: PersonQuery = {},
+		): Promise<{ items: Person[]; total: number }> => {
+			const query = Object.fromEntries(
+				Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
+			);
+			const { data, headers } = await requestFull<Person[]>({
+				url: "/persons",
+				method: "GET",
+				query,
+			});
+			return {
+				items: data,
+				total: Number(headers.get("X-Total-Count") ?? data.length),
+			};
+		},
+		/** Exactly these persons (e.g. to show names of related persons) */
+		byIds: async (ids: string[]): Promise<Person[]> => {
+			const unique = [...new Set(ids)].filter(Boolean);
+			return unique.length
+				? get<Person[]>("/persons", { ids: unique.join(",") })
+				: [];
+		},
 		get: (id: string) => get<Person>(`/persons/${id}`),
 		create: (data: PersonInput) => post<Person>("/persons", data),
 		update: (id: string, data: Partial<PersonInput>) =>
@@ -173,6 +274,40 @@ export const api = {
 		update: (id: string, data: Partial<RelationshipInput>) =>
 			put<Relationship>(`/relationships/${id}`, data),
 		remove: (id: string) => del(`/relationships/${id}`),
+	},
+
+	tokens: {
+		list: () => get<ApiToken[]>("/tokens"),
+		create: (data: {
+			UserId: string;
+			Name: string;
+			ExpiresInDays: number | null;
+		}) => post<ApiToken>("/tokens", data),
+		remove: (id: string) => del(`/tokens/${id}`),
+	},
+
+	federation: {
+		peers: () => get<Peer[]>("/federation/peers"),
+		addPeer: (data: { Name: string; BaseUrl: string; Token: string }) =>
+			post<Peer>("/federation/peers", data),
+		checkPeer: (id: string) => post<Peer>(`/federation/peers/${id}/check`, {}),
+		removePeer: (id: string) => del(`/federation/peers/${id}`),
+		search: (peerId: string, q: string) =>
+			get<RemotePerson[]>(`/federation/peers/${peerId}/persons`, { q }),
+		person: (peerId: string, remoteId: string) =>
+			get<RemotePerson>(
+				`/federation/peers/${peerId}/persons/${encodeURIComponent(remoteId)}`,
+			),
+		links: (personId: string) =>
+			get<PersonLinkEntry[]>("/federation/links", { personId }),
+		addLink: (data: {
+			PersonId: string;
+			PeerId: string;
+			RemotePersonId: string;
+			Relation: LinkRelation;
+			Notes: string;
+		}) => post<PersonLinkEntry>("/federation/links", data),
+		removeLink: (id: string) => del(`/federation/links/${id}`),
 	},
 
 	gedcom: {

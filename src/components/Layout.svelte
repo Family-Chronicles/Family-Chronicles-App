@@ -4,10 +4,12 @@
 	import {
 		canEdit,
 		clearSession,
+		getRefreshToken,
 		currentUser,
 		isAdmin,
 	} from "../lib/state/session";
 	import { liveConnected } from "../lib/state/live";
+	import { api } from "../lib/api/client";
 	import { LOCALES, locale, setLocale, t, type Locale } from "../lib/i18n";
 
 	let { children }: { children: Snippet } = $props();
@@ -18,10 +20,18 @@
 		{ path: "/persons", label: $t("nav.persons") },
 		{ path: "/families", label: $t("nav.families") },
 		...($canEdit ? [{ path: "/gedcom", label: $t("nav.gedcom") }] : []),
-		...($isAdmin ? [{ path: "/users", label: $t("nav.users") }] : []),
+		...($isAdmin
+			? [
+					{ path: "/users", label: $t("nav.users") },
+					{ path: "/federation", label: $t("nav.federation") },
+				]
+			: []),
 	]);
 
 	function logout() {
+		const refreshToken = getRefreshToken();
+		// end the session on the server too; leave the page right away anyway
+		if (refreshToken) api.logout(refreshToken).catch(() => undefined);
 		clearSession();
 		go("/");
 	}

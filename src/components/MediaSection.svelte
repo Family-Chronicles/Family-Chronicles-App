@@ -75,6 +75,8 @@
 	let viewOpen = $state(false);
 	let current = $state<Media | null>(null);
 	let tags = $state<MediaTag[]>([]);
+	let extra = $state(new Map<string, Person>());
+	const personOf = (pid: string) => persons.get(pid) ?? extra.get(pid);
 	let tagPerson = $state<string | null>(null);
 	let placing = $state(false);
 
@@ -89,6 +91,14 @@
 	async function reloadTags() {
 		if (!current) return;
 		tags = (await api.media.get(current.Id)).Tags ?? [];
+		// names of tagged persons that are not on this page yet
+		const missing = tags
+			.map((x) => x.PersonId)
+			.filter((pid) => !persons.has(pid) && !extra.has(pid));
+		if (missing.length) {
+			const found = await api.persons.byIds(missing);
+			extra = new Map([...extra, ...found.map((p) => [p.Id, p] as const)]);
+		}
 	}
 
 	async function addTag(x: number | null = null, y: number | null = null) {
@@ -253,7 +263,7 @@
 						<span
 							class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bark-800/85 px-2 py-0.5 text-xs whitespace-nowrap text-white shadow"
 							style="left: {tag.X! * 100}%; top: {tag.Y! * 100}%"
-							>{fullName(persons.get(tag.PersonId))}</span
+							>{fullName(personOf(tag.PersonId))}</span
 						>
 					{/each}
 				</div>
@@ -263,7 +273,7 @@
 				<p class="mt-2 text-xs text-stone-500">
 					{$t("media.belongsTo")}
 					<a class="link" href={href(`/persons/${current.PersonId}`)}
-						>{fullName(persons.get(current.PersonId))}</a
+						>{fullName(personOf(current.PersonId))}</a
 					>
 					{#if current.FileName}· {current.FileName}
 						{formatSize(current.Size)}{/if}
@@ -279,7 +289,7 @@
 						{#each tags as tag (tag.Id)}
 							<li class="flex items-center justify-between gap-2 text-sm">
 								<a class="link truncate" href={href(`/persons/${tag.PersonId}`)}
-									>{fullName(persons.get(tag.PersonId))}</a
+									>{fullName(personOf(tag.PersonId))}</a
 								>
 								{#if $canEdit}<button
 										class="text-xs text-red-700 hover:underline"

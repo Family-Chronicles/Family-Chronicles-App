@@ -13,6 +13,8 @@ import Users from "../pages/Users.svelte";
 import Account from "../pages/Account.svelte";
 import NotFound from "../pages/NotFound.svelte";
 import Gedcom from "../pages/Gedcom.svelte";
+import ResetPassword from "../pages/ResetPassword.svelte";
+import Federation from "../pages/Federation.svelte";
 
 // Pages either take `params` or no props at all
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,6 +53,8 @@ export const router = createRouter({
 		route("/users", Users, "titles.users", "Admin"),
 		route("/account", Account, "titles.account"),
 		route("/gedcom", Gedcom, "titles.gedcom", "Editor"),
+		route("/federation", Federation, "titles.federation", "Admin"),
+		route("/reset-password", ResetPassword, "titles.resetPassword"),
 		route("*", NotFound, "titles.notFound"),
 	],
 });

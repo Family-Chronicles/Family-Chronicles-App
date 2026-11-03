@@ -76,3 +76,7 @@ and the dev server, then runs the Playwright tests in `e2e/`. Run `npx playwrigh
 - GEDCOM import and export (Editor)
 - Live updates: changes made by others appear without reloading
 - German and English, chosen language is remembered
+- Life events (baptism, occupation, residence, …) and sources per person
+- Paged person list with server-side search
+- Login stays valid with automatically renewed tokens; "forgot password" by email (if the server has SMTP)
+- Federation (admins): connect other instances, link persons to persons there

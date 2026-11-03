@@ -31,6 +31,49 @@ export interface User {
 	UpdatedAt: string;
 }
 
+export type EventType =
+	| "Baptism"
+	| "Confirmation"
+	| "Burial"
+	| "Cremation"
+	| "Occupation"
+	| "Residence"
+	| "Education"
+	| "Emigration"
+	| "Immigration"
+	| "Naturalization"
+	| "Military"
+	| "Religion"
+	| "Other";
+export const EVENT_TYPES: EventType[] = [
+	"Baptism",
+	"Confirmation",
+	"Occupation",
+	"Residence",
+	"Education",
+	"Military",
+	"Emigration",
+	"Immigration",
+	"Naturalization",
+	"Religion",
+	"Burial",
+	"Cremation",
+	"Other",
+];
+
+export interface PersonEvent {
+	Type: EventType;
+	Date: DateString;
+	Place: string | null;
+	Description: string;
+}
+
+export interface Source {
+	Title: string;
+	Citation: string;
+	Url: string | null;
+}
+
 export interface Person {
 	Id: string;
 	FirstNames: string[];
@@ -44,6 +87,9 @@ export interface Person {
 	PlaceOfDeath: string | null;
 	CauseOfDeath: string | null;
 	Notes: string;
+	/** Missing on data from older servers */
+	Events?: PersonEvent[];
+	Sources?: Source[];
 	CreatedAt: string;
 	UpdatedAt: string;
 }
@@ -136,3 +182,54 @@ export interface ApiErrorBody {
 	message: string;
 	details?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] };
 }
+
+export interface ApiToken {
+	Id: string;
+	UserId: string;
+	Name: string;
+	CreatedAt: string;
+	LastUsedAt: string | null;
+	ExpiresAt: string | null;
+	/** Only present right after creating the token */
+	Token?: string;
+}
+
+export type PeerStatus = "Ok" | "Unreachable" | "Unauthorized";
+
+export interface Peer {
+	Id: string;
+	Name: string;
+	BaseUrl: string;
+	Status: PeerStatus;
+	CheckedAt: string;
+	CreatedAt: string;
+}
+
+export type LinkRelation = "SamePerson" | "Relative";
+
+export interface PersonLinkEntry {
+	Id: string;
+	PersonId: string;
+	PeerId: string;
+	PeerName: string | null;
+	RemotePersonId: string;
+	RemoteName: string;
+	Relation: LinkRelation;
+	Notes: string;
+	CreatedAt: string;
+}
+
+/** Basic data of a person on another instance */
+export type RemotePerson = Pick<
+	Person,
+	| "Id"
+	| "FirstNames"
+	| "MiddleNames"
+	| "LastNames"
+	| "BirthName"
+	| "Gender"
+	| "DateOfBirth"
+	| "PlaceOfBirth"
+	| "DateOfDeath"
+	| "PlaceOfDeath"
+>;
