@@ -338,8 +338,8 @@ export const en: Messages = {
 		subtitle: "Exchange family trees with other programs in GEDCOM format.",
 		importTitle: "Import GEDCOM",
 		importHint:
-			"People and relationships from a .ged file (GEDCOM 5.5.1, e.g. from Ancestry, MyHeritage, Gramps) are added. Existing data is not merged – importing the same file twice creates duplicates.",
-		file: "GEDCOM file",
+			"People and relationships from a .ged file (GEDCOM 5.5.1, e.g. from Ancestry, MyHeritage, Gramps) are added – with a zip file including pictures also the media. Existing data is not merged – importing the same file twice creates duplicates.",
+		file: "GEDCOM file (.ged) or zip with media",
 		familyName: "Create family (optional)",
 		familyHint: "All imported people become members of this family.",
 		import: "Import",
@@ -349,8 +349,10 @@ export const en: Messages = {
 		openFamily: "Open family",
 		exportTitle: "Export GEDCOM",
 		exportHint:
-			"Downloads all people and relationships as GEDCOM 5.5.1 (UTF-8). The file contains personal data of living people – please handle it with care.",
-		export: "Export",
+			"Downloads all people and relationships as GEDCOM 5.5.1 (UTF-8), optionally as zip with all pictures and documents. The file contains personal data of living people – please handle it with care.",
+		export: "GEDCOM only (.ged)",
+		exportZip: "With pictures and documents (zip)",
+		resultMedia: "{count} pictures and documents imported.",
 		exported: "Export downloaded.",
 	},
 	federation: {

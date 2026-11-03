@@ -317,6 +317,7 @@ export const api = {
 			return request<{
 				Persons: number;
 				Relationships: number;
+				Media: number;
 				FamilyId: string | null;
 				Warnings: string[];
 			}>({
@@ -326,8 +327,13 @@ export const api = {
 				query: familyName ? { family: familyName } : undefined,
 			});
 		},
-		export: () =>
-			request<Blob>({ url: "/gedcom/export", method: "GET", parseAs: "blob" }),
+		export: (withMedia = false) =>
+			request<Blob>({
+				url: "/gedcom/export",
+				method: "GET",
+				query: withMedia ? { format: "zip" } : undefined,
+				parseAs: "blob",
+			}),
 	},
 
 	media: {
