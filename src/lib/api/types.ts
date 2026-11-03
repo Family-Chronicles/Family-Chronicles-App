@@ -31,6 +31,49 @@ export interface User {
 	UpdatedAt: string;
 }
 
+export type EventType =
+	| "Baptism"
+	| "Confirmation"
+	| "Burial"
+	| "Cremation"
+	| "Occupation"
+	| "Residence"
+	| "Education"
+	| "Emigration"
+	| "Immigration"
+	| "Naturalization"
+	| "Military"
+	| "Religion"
+	| "Other";
+export const EVENT_TYPES: EventType[] = [
+	"Baptism",
+	"Confirmation",
+	"Occupation",
+	"Residence",
+	"Education",
+	"Military",
+	"Emigration",
+	"Immigration",
+	"Naturalization",
+	"Religion",
+	"Burial",
+	"Cremation",
+	"Other",
+];
+
+export interface PersonEvent {
+	Type: EventType;
+	Date: DateString;
+	Place: string | null;
+	Description: string;
+}
+
+export interface Source {
+	Title: string;
+	Citation: string;
+	Url: string | null;
+}
+
 export interface Person {
 	Id: string;
 	FirstNames: string[];
@@ -44,6 +87,9 @@ export interface Person {
 	PlaceOfDeath: string | null;
 	CauseOfDeath: string | null;
 	Notes: string;
+	/** Missing on data from older servers */
+	Events?: PersonEvent[];
+	Sources?: Source[];
 	CreatedAt: string;
 	UpdatedAt: string;
 }

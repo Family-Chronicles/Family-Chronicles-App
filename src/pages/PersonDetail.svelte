@@ -19,6 +19,7 @@
 	import RelationshipsSection from "../components/RelationshipsSection.svelte";
 	import FamiliesSection from "../components/FamiliesSection.svelte";
 	import MediaSection from "../components/MediaSection.svelte";
+	import LifeSection from "../components/LifeSection.svelte";
 
 	let { params }: { params: Record<string, string> } = $props();
 	const id = $derived(params.id);
@@ -148,6 +149,7 @@
 					<p class="text-sm whitespace-pre-wrap">{person.Notes}</p>
 				{/if}
 			</section>
+			<LifeSection {person} />
 			<FamiliesSection {person} {memberships} onchange={load} />
 		</div>
 		<div class="space-y-6 lg:col-span-2">

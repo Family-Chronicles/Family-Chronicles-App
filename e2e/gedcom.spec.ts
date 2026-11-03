@@ -27,6 +27,14 @@ test("imports a GEDCOM file and exports the data again", async ({ page }) => {
 	).toBeVisible();
 	await expect(page.getByText("Mitglieder (4)")).toBeVisible();
 
+	// life events and sources from the file are shown on the person page
+	await page.getByRole("link", { name: /Karl Friedrich Schmidt/ }).click();
+	await expect(page.getByTestId("life-events")).toContainText("Taufe");
+	await expect(page.getByTestId("life-events")).toContainText("Beruf: Schmied");
+	await expect(page.getByTestId("sources")).toContainText(
+		"Kirchenbuch St. Lorenz",
+	);
+
 	await page.goto("/#/gedcom");
 	const download = page.waitForEvent("download");
 	await page.getByRole("button", { name: "Exportieren" }).click();
