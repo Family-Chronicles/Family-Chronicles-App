@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { t } from "./lib/i18n";
+	import { startLive } from "./lib/state/live";
+	import { onMount } from "svelte";
 	import { currentRoute, type PageMeta } from "./lib/router";
 	import { session, hasRole } from "./lib/state/session";
 	import Login from "./pages/Login.svelte";
@@ -6,13 +9,15 @@
 	import Toasts from "./components/Toasts.svelte";
 	import Forbidden from "./pages/Forbidden.svelte";
 
+	onMount(startLive);
+
 	let meta = $derived($currentRoute.matched?.meta as PageMeta | undefined);
 	let allowed = $derived(!!$session && (!meta?.role || hasRole(meta.role)));
 
 	$effect(() => {
 		document.title = meta?.title
-			? `${meta.title} · Family Chronicles`
-			: "Family Chronicles";
+			? `${$t(meta.title)} · ${$t("app.name")}`
+			: $t("app.name");
 	});
 </script>
 

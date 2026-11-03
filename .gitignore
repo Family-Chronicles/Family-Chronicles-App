@@ -351,3 +351,7 @@ MigrationBackup/
 
 # Build output
 dist/
+
+# Playwright
+test-results/
+playwright-report/

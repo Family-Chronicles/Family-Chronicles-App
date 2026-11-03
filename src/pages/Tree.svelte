@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { api } from "../lib/api/client";
 	import type { FamilyTree } from "../lib/api/types";
 	import { fullName } from "../lib/format";
@@ -10,55 +11,64 @@
 	import DescendantTree from "../components/DescendantTree.svelte";
 	import TreeCard from "../components/TreeCard.svelte";
 
+	import { onMount } from "svelte";
+	import { autoReload } from "../lib/state/live";
+
 	let { params }: { params: Record<string, string> } = $props();
 
 	let tree = $state<FamilyTree | null>(null);
 	let depth = $state(3);
 	let view = $state<"ancestors" | "descendants">("ancestors");
 
-	$effect(() => {
-		const d = depth;
+	const load = () =>
 		api.persons
-			.tree(params.id, d)
-			.then((t) => (tree = t))
+			.tree(params.id, depth)
+			.then((result) => (tree = result))
 			.catch(notifyError);
+
+	$effect(() => {
+		void depth;
+		load();
 	});
+
+	onMount(() => autoReload(["persons", "relationships"], load));
 </script>
 
 {#if !tree}
 	<Loading />
 {:else}
-	<PageHeader title="Stammbaum" subtitle={fullName(tree.Root)}>
+	<PageHeader title={$t("tree.title")} subtitle={fullName(tree.Root)}>
 		{#snippet actions()}
 			<div
 				class="inline-flex rounded-lg border border-bark-200 bg-white p-0.5 text-sm"
 				role="group"
-				aria-label="Ansicht"
+				aria-label={$t("tree.view")}
 			>
 				<button
 					class="rounded-md px-3 py-1.5 {view === 'ancestors'
 						? 'bg-bark-100 font-medium'
 						: ''}"
 					aria-pressed={view === "ancestors"}
-					onclick={() => (view = "ancestors")}>Vorfahren</button
+					onclick={() => (view = "ancestors")}>{$t("tree.ancestors")}</button
 				>
 				<button
 					class="rounded-md px-3 py-1.5 {view === 'descendants'
 						? 'bg-bark-100 font-medium'
 						: ''}"
 					aria-pressed={view === "descendants"}
-					onclick={() => (view = "descendants")}>Nachkommen</button
+					onclick={() => (view = "descendants")}
+					>{$t("tree.descendants")}</button
 				>
 			</div>
 			<label class="flex items-center gap-2 text-sm">
-				Generationen
+				{$t("tree.generations")}
 				<select class="input w-20" bind:value={depth}>
 					{#each [1, 2, 3, 4, 5, 6] as d (d)}<option value={d}>{d}</option
 						>{/each}
 				</select>
 			</label>
 			<a class="btn-secondary" href={href(`/persons/${params.id}`)}
-				>Zur Person</a
+				>{$t("tree.toPerson")}</a
 			>
 		{/snippet}
 	</PageHeader>
@@ -66,13 +76,13 @@
 	<div class="card overflow-auto p-6">
 		{#if view === "ancestors"}
 			{#if tree.Ancestors.Parents.length === 0}
-				<p class="mb-4 text-sm text-stone-500">Es sind keine Eltern erfasst.</p>
+				<p class="mb-4 text-sm text-stone-500">{$t("tree.noParents")}</p>
 			{/if}
 			<AncestorTree node={tree.Ancestors} root />
 		{:else}
 			{#if tree.Descendants.Children.length === 0 && tree.Descendants.Partners.length === 0}
 				<p class="mb-4 text-sm text-stone-500">
-					Es sind keine Partner oder Kinder erfasst.
+					{$t("tree.noDescendants")}
 				</p>
 			{/if}
 			<div class="inline-block min-w-full">
@@ -83,7 +93,7 @@
 
 	{#if tree.Siblings.length}
 		<section class="mt-6">
-			<h2 class="mb-3 text-lg font-semibold">Geschwister</h2>
+			<h2 class="mb-3 text-lg font-semibold">{$t("tree.siblings")}</h2>
 			<div class="flex flex-wrap gap-3">
 				{#each tree.Siblings as s (s.Id)}<TreeCard person={s} />{/each}
 			</div>

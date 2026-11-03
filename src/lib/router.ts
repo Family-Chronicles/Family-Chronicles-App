@@ -12,6 +12,7 @@ import FamilyDetail from "../pages/FamilyDetail.svelte";
 import Users from "../pages/Users.svelte";
 import Account from "../pages/Account.svelte";
 import NotFound from "../pages/NotFound.svelte";
+import Gedcom from "../pages/Gedcom.svelte";
 
 // Pages either take `params` or no props at all
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,6 +20,7 @@ type Page = Component<any>;
 
 export interface PageMeta extends Record<string, unknown> {
 	page: Page;
+	/** i18n key of the page title */
 	title: string;
 	role?: Role;
 }
@@ -38,17 +40,18 @@ const route = (
 export const router = createRouter({
 	hash: true,
 	routes: [
-		route("/", Dashboard, "Übersicht"),
-		route("/persons", Persons, "Personen"),
-		route("/persons/new", PersonEdit, "Neue Person", "Editor"),
-		route("/persons/:id", PersonDetail, "Person"),
-		route("/persons/:id/edit", PersonEdit, "Person bearbeiten", "Editor"),
-		route("/persons/:id/tree", Tree, "Stammbaum"),
-		route("/families", Families, "Familien"),
-		route("/families/:id", FamilyDetail, "Familie"),
-		route("/users", Users, "Benutzer", "Admin"),
-		route("/account", Account, "Mein Konto"),
-		route("*", NotFound, "Nicht gefunden"),
+		route("/", Dashboard, "titles.dashboard"),
+		route("/persons", Persons, "titles.persons"),
+		route("/persons/new", PersonEdit, "titles.newPerson", "Editor"),
+		route("/persons/:id", PersonDetail, "titles.person"),
+		route("/persons/:id/edit", PersonEdit, "titles.editPerson", "Editor"),
+		route("/persons/:id/tree", Tree, "titles.tree"),
+		route("/families", Families, "titles.families"),
+		route("/families/:id", FamilyDetail, "titles.family"),
+		route("/users", Users, "titles.users", "Admin"),
+		route("/account", Account, "titles.account"),
+		route("/gedcom", Gedcom, "titles.gedcom", "Editor"),
+		route("*", NotFound, "titles.notFound"),
 	],
 });
 

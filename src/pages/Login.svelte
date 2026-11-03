@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from "../lib/api/client";
 	import { setSession } from "../lib/state/session";
+	import { LOCALES, locale, setLocale, t, type Locale } from "../lib/i18n";
 
 	let email = $state("");
 	let password = $state("");
@@ -17,7 +18,7 @@
 		} catch (err) {
 			error =
 				(err as { status?: number }).status === 401
-					? "E-Mail oder Passwort ist falsch."
+					? $t("login.wrong")
 					: (err as Error).message;
 		} finally {
 			busy = false;
@@ -32,13 +33,13 @@
 		<div class="mb-8 text-center">
 			<img src="/favicon.svg" alt="" class="mx-auto h-16 w-16" />
 			<h1 class="mt-4 text-3xl font-semibold text-bark-900">
-				Family Chronicles
+				{$t("app.name")}
 			</h1>
-			<p class="mt-1 text-stone-600">Die Geschichte deiner Familie</p>
+			<p class="mt-1 text-stone-600">{$t("app.tagline")}</p>
 		</div>
 		<form class="card space-y-4 p-6" onsubmit={submit}>
 			<div>
-				<label class="label" for="email">E-Mail</label>
+				<label class="label" for="email">{$t("login.email")}</label>
 				<input
 					id="email"
 					class="input"
@@ -49,7 +50,7 @@
 				/>
 			</div>
 			<div>
-				<label class="label" for="password">Passwort</label>
+				<label class="label" for="password">{$t("login.password")}</label>
 				<input
 					id="password"
 					class="input"
@@ -66,8 +67,23 @@
 					{error}
 				</p>{/if}
 			<button class="btn-primary w-full" disabled={busy}
-				>{busy ? "Anmelden …" : "Anmelden"}</button
+				>{busy ? $t("login.submitting") : $t("login.submit")}</button
 			>
 		</form>
+		<div
+			class="mt-4 flex justify-center gap-2 text-sm"
+			role="group"
+			aria-label={$t("nav.language")}
+		>
+			{#each LOCALES as l (l.code)}
+				<button
+					class="rounded px-2 py-1 {$locale === l.code
+						? 'font-semibold text-bark-800'
+						: 'text-stone-500'}"
+					aria-pressed={$locale === l.code}
+					onclick={() => setLocale(l.code as Locale)}>{l.label}</button
+				>
+			{/each}
+		</div>
 	</div>
 </div>

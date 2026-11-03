@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 	import Modal from "./Modal.svelte";
+	import { t } from "../lib/i18n";
 
 	let {
-		title = "Wirklich löschen?",
+		title,
 		message,
-		confirmLabel = "Löschen",
+		confirmLabel,
 		class: className = "btn-danger",
 		onconfirm,
 		children,
@@ -36,14 +37,14 @@
 	>{@render children()}</button
 >
 
-<Modal bind:open {title} size="sm">
+<Modal bind:open title={title ?? $t("common.confirmDelete")} size="sm">
 	<p class="text-sm text-stone-700">{message}</p>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (open = false)}
-			>Abbrechen</button
+			>{$t("common.cancel")}</button
 		>
 		<button class="btn-danger" disabled={busy} onclick={confirm}
-			>{confirmLabel}</button
+			>{confirmLabel ?? $t("common.delete")}</button
 		>
 	{/snippet}
 </Modal>

@@ -8,10 +8,14 @@ export default defineConfig({
 		port: 5173,
 		// During development API calls are proxied to the server, so no CORS setup is needed.
 		proxy: {
-			"/api": process.env.API_PROXY_TARGET ?? "http://localhost:8080",
+			"/api": {
+				target: process.env.API_PROXY_TARGET ?? "http://localhost:8080",
+				ws: true, // live updates (/api/v1/live)
+			},
 		},
 	},
 	test: {
 		include: ["src/**/*.test.ts"],
+		exclude: ["e2e/**", "node_modules/**"],
 	},
 });

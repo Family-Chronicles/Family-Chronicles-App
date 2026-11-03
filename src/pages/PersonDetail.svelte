@@ -7,10 +7,12 @@
 		Person,
 		Relationship,
 	} from "../lib/api/types";
-	import { formatDate, fullName, GENDER_LABEL } from "../lib/format";
+	import { formatDate, fullName } from "../lib/format";
 	import { go, href } from "../lib/router";
 	import { canEdit } from "../lib/state/session";
 	import { notify, notifyError } from "../lib/state/toasts";
+	import { autoReload } from "../lib/state/live";
+	import { t } from "../lib/i18n";
 	import Loading from "../components/Loading.svelte";
 	import Avatar from "../components/Avatar.svelte";
 	import ConfirmButton from "../components/ConfirmButton.svelte";
@@ -24,7 +26,7 @@
 	let person = $state<Person | null>(null);
 	let relationships = $state<Relationship[]>([]);
 	let memberships = $state<Membership[]>([]);
-	let media: { Own: Media[]; Tagged: Media[] } = $state({
+	let media = $state<{ Own: Media[]; Tagged: Media[] }>({
 		Own: [],
 		Tagged: [],
 	});
@@ -46,6 +48,7 @@
 			memberships = mems;
 			media = med;
 			persons = new Map(all.map((x) => [x.Id, x]));
+			missing = false;
 		} catch (e) {
 			if ((e as { status?: number }).status === 404) missing = true;
 			else notifyError(e);
@@ -54,32 +57,33 @@
 		}
 	}
 
-	onMount(load);
+	onMount(() => {
+		load();
+		return autoReload(
+			["persons", "relationships", "memberships", "families", "media", "tags"],
+			load,
+		);
+	});
 
 	async function remove() {
 		await api.persons.remove(id);
-		notify("Person gelöscht.");
+		notify($t("person.deleted"));
 		go("/persons");
 	}
+
+	const place = (date: string | null, where: string | null) =>
+		date && where
+			? $t("person.bornIn", { date: formatDate(date), place: where })
+			: formatDate(date) || where || "";
 
 	const facts = $derived(
 		person
 			? [
-					["Geschlecht", GENDER_LABEL[person.Gender]],
-					["Geburtsname", person.BirthName],
-					[
-						"Geboren",
-						[formatDate(person.DateOfBirth), person.PlaceOfBirth]
-							.filter(Boolean)
-							.join(" in "),
-					],
-					[
-						"Gestorben",
-						[formatDate(person.DateOfDeath), person.PlaceOfDeath]
-							.filter(Boolean)
-							.join(" in "),
-					],
-					["Todesursache", person.CauseOfDeath],
+					[$t("person.gender"), $t(`gender.${person.Gender}`)],
+					[$t("person.birthName"), person.BirthName],
+					[$t("person.born"), place(person.DateOfBirth, person.PlaceOfBirth)],
+					[$t("person.died"), place(person.DateOfDeath, person.PlaceOfDeath)],
+					[$t("person.causeOfDeath"), person.CauseOfDeath],
 				].filter(([, v]) => v)
 			: [],
 	);
@@ -89,9 +93,8 @@
 	<Loading />
 {:else if missing || !person}
 	<p class="text-stone-600">
-		Diese Person existiert nicht (mehr). <a class="link" href={href("/persons")}
-			>Zur Übersicht</a
-		>
+		{$t("person.missing")}
+		<a class="link" href={href("/persons")}>{$t("common.toOverview")}</a>
 	</p>
 {:else}
 	<div class="mb-6 flex flex-wrap items-center gap-4">
@@ -104,14 +107,16 @@
 			</p>
 		</div>
 		<div class="flex flex-wrap gap-2">
-			<a class="btn-secondary" href={href(`/persons/${id}/tree`)}>Stammbaum</a>
+			<a class="btn-secondary" href={href(`/persons/${id}/tree`)}
+				>{$t("person.tree")}</a
+			>
 			{#if $canEdit}
-				<a class="btn-primary" href={href(`/persons/${id}/edit`)}>Bearbeiten</a>
+				<a class="btn-primary" href={href(`/persons/${id}/edit`)}
+					>{$t("common.edit")}</a
+				>
 				<ConfirmButton
-					message="{fullName(
-						person,
-					)} wird mit allen Beziehungen, Familienzugehörigkeiten und eigenen Medien gelöscht. Das kann nicht rückgängig gemacht werden."
-					onconfirm={remove}>Löschen</ConfirmButton
+					message={$t("person.deleteMessage", { name: fullName(person) })}
+					onconfirm={remove}>{$t("common.delete")}</ConfirmButton
 				>
 			{/if}
 		</div>
@@ -120,7 +125,7 @@
 	<div class="grid gap-6 lg:grid-cols-3">
 		<div class="space-y-6 lg:col-span-1">
 			<section class="card p-5">
-				<h2 class="mb-3 text-lg font-semibold">Daten</h2>
+				<h2 class="mb-3 text-lg font-semibold">{$t("person.data")}</h2>
 				<dl class="space-y-2 text-sm">
 					{#each facts as [label, value] (label)}
 						<div>
@@ -133,7 +138,7 @@
 				</dl>
 				{#if person.Notes}
 					<h3 class="mt-4 mb-1 text-xs tracking-wide text-stone-500 uppercase">
-						Notizen
+						{$t("common.notes")}
 					</h3>
 					<p class="text-sm whitespace-pre-wrap">{person.Notes}</p>
 				{/if}

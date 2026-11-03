@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { api } from "../lib/api/client";
 	import type {
 		DateString,
@@ -48,12 +49,12 @@
 			await api.memberships.create({
 				FamilyId: familyId,
 				PersonId: person.Id,
-				Role: role || "Mitglied",
+				Role: role || $t("common.member"),
 				StartDate: startDate,
 				EndDate: endDate,
 				Notes: "",
 			});
-			notify("Zur Familie hinzugefügt.");
+			notify($t("memberships.added"));
 			open = false;
 			onchange();
 		} catch (e) {
@@ -65,20 +66,20 @@
 
 	async function remove(m: Membership) {
 		await api.memberships.remove(m.Id);
-		notify("Aus der Familie entfernt.");
+		notify($t("memberships.removed"));
 		onchange();
 	}
 </script>
 
 <section class="card p-5">
 	<div class="mb-3 flex items-center justify-between">
-		<h2 class="text-lg font-semibold">Familien</h2>
+		<h2 class="text-lg font-semibold">{$t("memberships.title")}</h2>
 		{#if $canEdit}<button class="btn-secondary" onclick={openNew}
-				>+ Familie</button
+				>{$t("memberships.add")}</button
 			>{/if}
 	</div>
 	{#if memberships.length === 0}
-		<p class="text-sm text-stone-500">Gehört noch keiner Familie an.</p>
+		<p class="text-sm text-stone-500">{$t("memberships.empty")}</p>
 	{:else}
 		<ul class="space-y-2">
 			{#each memberships as m (m.Id)}
@@ -89,20 +90,22 @@
 						<a
 							class="font-medium text-bark-900 hover:underline"
 							href={href(`/families/${m.FamilyId}`)}
-							>{m.Family?.Name ?? "Familie"}</a
+							>{m.Family?.Name ?? $t("memberships.family")}</a
 						>
 						<p class="text-xs text-stone-500">
 							{m.Role}{#if m.StartDate || m.EndDate}&nbsp;· {formatDate(
 									m.StartDate,
-								) || "?"} – {formatDate(m.EndDate) || "heute"}{/if}
+								) || "?"} – {formatDate(m.EndDate) || $t("common.today")}{/if}
 						</p>
 					</div>
 					{#if $canEdit}
 						<ConfirmButton
 							class="btn-ghost text-xs text-red-700"
-							message="{person.FirstNames[0]} wird aus dieser Familie entfernt."
-							confirmLabel="Entfernen"
-							onconfirm={() => remove(m)}>Entfernen</ConfirmButton
+							message={$t("memberships.removeMessage", {
+								name: person.FirstNames[0],
+							})}
+							confirmLabel={$t("common.remove")}
+							onconfirm={() => remove(m)}>{$t("common.remove")}</ConfirmButton
 						>
 					{/if}
 				</li>
@@ -111,42 +114,46 @@
 	{/if}
 </section>
 
-<Modal bind:open title="Zu Familie hinzufügen" size="sm">
+<Modal bind:open title={$t("memberships.addTitle")} size="sm">
 	<div class="space-y-4">
 		<div>
-			<label class="label" for="mem-family">Familie</label>
+			<label class="label" for="mem-family">{$t("memberships.family")}</label>
 			<select id="mem-family" class="input" bind:value={familyId}>
-				<option value="" disabled>Bitte wählen …</option>
+				<option value="" disabled>{$t("memberships.choose")}</option>
 				{#each families as f (f.Id)}<option value={f.Id}>{f.Name}</option
 					>{/each}
 			</select>
 			{#if families.length === 0}<p class="mt-1 text-xs text-stone-500">
-					Keine weiteren Familien vorhanden. <a
-						class="link"
-						href={href("/families")}>Familie anlegen</a
+					{$t("memberships.noMore")}
+					<a class="link" href={href("/families")}
+						>{$t("memberships.createFamily")}</a
 					>
 				</p>{/if}
 		</div>
 		<div>
-			<label class="label" for="mem-role">Rolle</label>
+			<label class="label" for="mem-role">{$t("common.role")}</label>
 			<input
 				id="mem-role"
 				class="input"
-				placeholder="z. B. Mutter, Sohn, Stiefkind"
+				placeholder={$t("common.roleHint")}
 				bind:value={role}
 			/>
 		</div>
 		<div class="grid gap-4 sm:grid-cols-2">
-			<DateInput id="mem-start" label="Seit" bind:value={startDate} />
-			<DateInput id="mem-end" label="Bis" bind:value={endDate} />
+			<DateInput
+				id="mem-start"
+				label={$t("common.since")}
+				bind:value={startDate}
+			/>
+			<DateInput id="mem-end" label={$t("common.until")} bind:value={endDate} />
 		</div>
 	</div>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (open = false)}
-			>Abbrechen</button
+			>{$t("common.cancel")}</button
 		>
 		<button class="btn-primary" disabled={!familyId || busy} onclick={save}
-			>Hinzufügen</button
+			>{$t("common.add")}</button
 		>
 	{/snippet}
 </Modal>

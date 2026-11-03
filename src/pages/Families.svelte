@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { t } from "../lib/i18n";
 	import { onMount } from "svelte";
+	import { autoReload } from "../lib/state/live";
 	import { api } from "../lib/api/client";
 	import type { Family, FamilyInput } from "../lib/api/types";
 	import { go, href } from "../lib/router";
@@ -14,7 +16,7 @@
 	let loading = $state(true);
 	let formOpen = $state(false);
 
-	onMount(async () => {
+	async function load() {
 		try {
 			families = await api.families.list();
 		} catch (e) {
@@ -22,12 +24,17 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	onMount(() => {
+		load();
+		return autoReload(["families", "memberships"], load);
 	});
 
 	async function create(data: FamilyInput) {
 		try {
 			const family = await api.families.create(data);
-			notify("Familie angelegt.");
+			notify($t("families.created"));
 			go(`/families/${family.Id}`);
 		} catch (e) {
 			notifyError(e);
@@ -36,13 +43,10 @@
 	}
 </script>
 
-<PageHeader
-	title="Familien"
-	subtitle="Familien werden über die Nachnamen ihrer Mitglieder definiert."
->
+<PageHeader title={$t("families.title")} subtitle={$t("families.subtitle")}>
 	{#snippet actions()}
 		{#if $canEdit}<button class="btn-primary" onclick={() => (formOpen = true)}
-				>+ Familie anlegen</button
+				>{$t("families.create")}</button
 			>{/if}
 	{/snippet}
 </PageHeader>
@@ -50,7 +54,7 @@
 {#if loading}
 	<Loading />
 {:else if families.length === 0}
-	<Empty message="Noch keine Familien angelegt." />
+	<Empty message={$t("families.empty")} />
 {:else}
 	<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each families as f (f.Id)}
@@ -61,14 +65,16 @@
 				>
 					<h2 class="text-xl font-semibold text-bark-900">{f.Name}</h2>
 					{#if f.HistoricalNames.length}<p class="text-sm text-stone-500">
-							auch: {f.HistoricalNames.join(", ")}
+							{$t("families.also", { names: f.HistoricalNames.join(", ") })}
 						</p>{/if}
 					{#if f.Description}<p
 							class="mt-2 line-clamp-2 text-sm text-stone-700"
 						>
 							{f.Description}
 						</p>{/if}
-					<p class="mt-3 chip">{f.MemberCount ?? 0} Mitglieder</p>
+					<p class="mt-3 chip">
+						{$t("families.members", { count: f.MemberCount ?? 0 })}
+					</p>
 				</a>
 			</li>
 		{/each}
