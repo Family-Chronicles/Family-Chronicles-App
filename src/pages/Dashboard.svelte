@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { api } from "../lib/api/client";
-	import type { Family, Person } from "../lib/api/types";
+	import { api, type Stats } from "../lib/api/client";
+	import type { Person } from "../lib/api/types";
 	import { href } from "../lib/router";
 	import { canEdit, currentUser } from "../lib/state/session";
 	import { notifyError } from "../lib/state/toasts";
@@ -11,20 +11,13 @@
 	import PersonLink from "../components/PersonLink.svelte";
 	import Empty from "../components/Empty.svelte";
 
-	let persons = $state<Person[]>([]);
-	let families = $state<Family[]>([]);
-	let loading = $state(true);
+	let stats = $state<Stats | null>(null);
 
 	async function load() {
 		try {
-			[persons, families] = await Promise.all([
-				api.persons.list(),
-				api.families.list(),
-			]);
+			stats = await api.stats();
 		} catch (e) {
 			notifyError(e);
-		} finally {
-			loading = false;
 		}
 	}
 
@@ -33,24 +26,7 @@
 		return autoReload(["persons", "families"], load);
 	});
 
-	let recent = $derived(
-		[...persons]
-			.sort((a, b) => b.UpdatedAt.localeCompare(a.UpdatedAt))
-			.slice(0, 6),
-	);
 	const today = new Date();
-	let anniversaries = $derived(
-		persons
-			.filter((p) => p.DateOfBirth?.length === 10)
-			.filter(
-				(p) => Number(p.DateOfBirth!.slice(5, 7)) === today.getMonth() + 1,
-			)
-			.sort((a, b) =>
-				a.DateOfBirth!.slice(8).localeCompare(b.DateOfBirth!.slice(8)),
-			),
-	);
-	let living = $derived(persons.filter((p) => !p.DateOfDeath).length);
-
 	const birthday = (p: Person) => {
 		const age = today.getFullYear() - Number(p.DateOfBirth!.slice(0, 4));
 		const day = `${p.DateOfBirth!.slice(8)}.${p.DateOfBirth!.slice(5, 7)}.`;
@@ -63,7 +39,7 @@
 </h1>
 <p class="mt-1 text-stone-600">{$t("dashboard.intro")}</p>
 
-{#if loading}
+{#if !stats}
 	<Loading />
 {:else}
 	<div class="mt-8 grid gap-4 sm:grid-cols-3">
@@ -73,19 +49,19 @@
 				class="mt-1 font-serif text-4xl font-semibold text-bark-800"
 				data-testid="person-count"
 			>
-				{persons.length}
+				{stats.Persons}
 			</p>
 		</a>
 		<a href={href("/families")} class="card p-5 hover:border-bark-300">
 			<p class="text-sm text-stone-500">{$t("dashboard.families")}</p>
 			<p class="mt-1 font-serif text-4xl font-semibold text-bark-800">
-				{families.length}
+				{stats.Families}
 			</p>
 		</a>
 		<div class="card p-5">
 			<p class="text-sm text-stone-500">{$t("dashboard.living")}</p>
 			<p class="mt-1 font-serif text-4xl font-semibold text-bark-800">
-				{living}
+				{stats.Living}
 			</p>
 		</div>
 	</div>
@@ -93,9 +69,9 @@
 	<div class="mt-8 grid gap-6 lg:grid-cols-2">
 		<section class="card p-5">
 			<h2 class="mb-3 text-lg font-semibold">{$t("dashboard.recent")}</h2>
-			{#if recent.length}
+			{#if stats.Recent.length}
 				<div class="grid gap-1 sm:grid-cols-2">
-					{#each recent as p (p.Id)}<PersonLink person={p} />{/each}
+					{#each stats.Recent as p (p.Id)}<PersonLink person={p} />{/each}
 				</div>
 			{:else}
 				<Empty message={$t("dashboard.noPersons")}>
@@ -107,9 +83,9 @@
 		</section>
 		<section class="card p-5">
 			<h2 class="mb-3 text-lg font-semibold">{$t("dashboard.birthdays")}</h2>
-			{#if anniversaries.length}
+			{#if stats.Birthdays.length}
 				<div class="grid gap-1 sm:grid-cols-2">
-					{#each anniversaries as p (p.Id)}<PersonLink
+					{#each stats.Birthdays as p (p.Id)}<PersonLink
 							person={p}
 							sub={birthday(p)}
 						/>{/each}

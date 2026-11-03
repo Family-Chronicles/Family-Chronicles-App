@@ -100,6 +100,8 @@ export const de = {
 		noMatch: "Keine Person passt zur Suche.",
 		empty: "Noch keine Personen erfasst.",
 		born: "geb. {name}",
+		loadMore: "Weitere laden",
+		showing: "{shown} von {total} angezeigt",
 	},
 	person: {
 		newTitle: "Neue Person",

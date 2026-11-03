@@ -75,6 +75,13 @@ function toApiError(error: unknown): ApiError {
 }
 
 async function request<T>(config: HttpRequestConfig): Promise<T> {
+	return (await requestFull<T>(config)).data;
+}
+
+/** Like request, but also returns the response headers */
+async function requestFull<T>(
+	config: HttpRequestConfig,
+): Promise<{ data: T; headers: Headers }> {
 	// logins and password changes do not change shared data
 	if (
 		config.method &&
@@ -83,8 +90,11 @@ async function request<T>(config: HttpRequestConfig): Promise<T> {
 	)
 		markOwnWrite();
 	try {
-		return (await http.request<T>({ ...config, url: API_URL + config.url }))
-			.data;
+		const response = await http.request<T>({
+			...config,
+			url: API_URL + config.url,
+		});
+		return { data: response.data, headers: response.headers };
 	} catch (error) {
 		throw toApiError(error);
 	}
@@ -99,7 +109,24 @@ const put = <T>(url: string, body: unknown) =>
 const del = (url: string) =>
 	request<{ success: boolean }>({ url, method: "DELETE" });
 
+export interface PersonQuery {
+	q?: string;
+	living?: boolean;
+	born?: string;
+	limit?: number;
+	offset?: number;
+}
+
+export interface Stats {
+	Persons: number;
+	Families: number;
+	Living: number;
+	Recent: Person[];
+	Birthdays: Person[];
+}
+
 export const api = {
+	stats: () => get<Stats>("/stats"),
 	login: (Email: string, Password: string) =>
 		post<{ token: string; user: User }>("/auth/login", { Email, Password }),
 	me: () => get<User>("/auth/me"),
@@ -130,7 +157,30 @@ export const api = {
 	},
 
 	persons: {
-		list: (q?: string) => get<Person[]>("/persons", q ? { q } : undefined),
+		/** One page of persons plus the total number of matches */
+		search: async (
+			params: PersonQuery = {},
+		): Promise<{ items: Person[]; total: number }> => {
+			const query = Object.fromEntries(
+				Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
+			);
+			const { data, headers } = await requestFull<Person[]>({
+				url: "/persons",
+				method: "GET",
+				query,
+			});
+			return {
+				items: data,
+				total: Number(headers.get("X-Total-Count") ?? data.length),
+			};
+		},
+		/** Exactly these persons (e.g. to show names of related persons) */
+		byIds: async (ids: string[]): Promise<Person[]> => {
+			const unique = [...new Set(ids)].filter(Boolean);
+			return unique.length
+				? get<Person[]>("/persons", { ids: unique.join(",") })
+				: [];
+		},
 		get: (id: string) => get<Person>(`/persons/${id}`),
 		create: (data: PersonInput) => post<Person>("/persons", data),
 		update: (id: string, data: Partial<PersonInput>) =>

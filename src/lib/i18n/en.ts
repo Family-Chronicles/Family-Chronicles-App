@@ -101,6 +101,8 @@ export const en: Messages = {
 		noMatch: "Nobody matches the search.",
 		empty: "No people yet.",
 		born: "née {name}",
+		loadMore: "Load more",
+		showing: "Showing {shown} of {total}",
 	},
 	person: {
 		newTitle: "New person",

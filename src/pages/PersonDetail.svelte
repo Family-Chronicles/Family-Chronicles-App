@@ -36,12 +36,17 @@
 
 	async function load() {
 		try {
-			const [p, rels, mems, med, all] = await Promise.all([
+			const [p, rels, mems, med] = await Promise.all([
 				api.persons.get(id),
 				api.persons.relationships(id),
 				api.persons.families(id),
 				api.persons.media(id),
-				api.persons.list(),
+			]);
+			// load only the persons this page shows (relatives, owners of tagged media)
+			const all = await api.persons.byIds([
+				p.Id,
+				...rels.flatMap((r) => [r.PersonId, r.RelatedPersonId]),
+				...med.Tagged.map((m) => m.PersonId),
 			]);
 			person = p;
 			relationships = rels;

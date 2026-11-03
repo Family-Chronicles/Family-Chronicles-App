@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { t } from "../lib/i18n";
-	import { onMount } from "svelte";
 	import { api } from "../lib/api/client";
 	import type { Person } from "../lib/api/types";
 	import { fullName, years } from "../lib/format";
@@ -17,24 +16,41 @@
 		id?: string;
 	} = $props();
 
-	let persons = $state<Person[]>([]);
+	let results = $state<Person[]>([]);
+	let selected = $state<Person | null>(null);
 	let query = $state("");
 	let focused = $state(false);
 
-	onMount(async () => {
-		persons = await api.persons.list();
+	// search on the server while typing
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let requestId = 0;
+	$effect(() => {
+		const q = query.trim();
+		clearTimeout(timer);
+		timer = setTimeout(async () => {
+			const id = ++requestId;
+			const page = await api.persons.search({ q, limit: 8 + exclude.length });
+			if (id === requestId) results = page.items;
+		}, 150);
 	});
 
-	let selected = $derived(persons.find((p) => p.Id === value) ?? null);
-	let matches = $derived.by(() => {
-		const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-		return persons
-			.filter((p) => !exclude.includes(p.Id))
-			.filter((p) => terms.every((t) => fullName(p).toLowerCase().includes(t)))
-			.slice(0, 8);
+	// keep the selected person in sync with the bound value
+	$effect(() => {
+		const id = value;
+		if (!id) {
+			selected = null;
+			return;
+		}
+		if (selected?.Id === id) return;
+		api.persons.byIds([id]).then((found) => (selected = found[0] ?? null));
 	});
+
+	let matches = $derived(
+		results.filter((p) => !exclude.includes(p.Id)).slice(0, 8),
+	);
 
 	function choose(p: Person) {
+		selected = p;
 		value = p.Id;
 		query = "";
 		focused = false;
