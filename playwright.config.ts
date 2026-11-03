@@ -39,6 +39,22 @@ export default defineConfig({
 			},
 		},
 		{
+			// a second instance, for the federation test
+			command: "node dist/server.js",
+			cwd: SERVER_DIR,
+			url: "http://localhost:8081/api/v1/health",
+			reuseExistingServer: !process.env.CI,
+			timeout: 60_000,
+			env: {
+				DB_DRIVER: "memory",
+				PORT: "8081",
+				JWT_SECRET: "e2e-secret-b",
+				ADMIN_PASSWORD: ADMIN.password,
+				RATE_LIMIT_PER_MINUTE: "100000",
+				UPLOAD_DIR: "/tmp/fc-e2e-uploads-b",
+			},
+		},
+		{
 			command: "npm run dev -- --port 5173 --strictPort",
 			url: "http://localhost:5173",
 			reuseExistingServer: !process.env.CI,

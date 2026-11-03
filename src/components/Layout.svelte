@@ -20,7 +20,12 @@
 		{ path: "/persons", label: $t("nav.persons") },
 		{ path: "/families", label: $t("nav.families") },
 		...($canEdit ? [{ path: "/gedcom", label: $t("nav.gedcom") }] : []),
-		...($isAdmin ? [{ path: "/users", label: $t("nav.users") }] : []),
+		...($isAdmin
+			? [
+					{ path: "/users", label: $t("nav.users") },
+					{ path: "/federation", label: $t("nav.federation") },
+				]
+			: []),
 	]);
 
 	function logout() {

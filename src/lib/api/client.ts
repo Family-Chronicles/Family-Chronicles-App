@@ -18,6 +18,11 @@ const errorText = (status: number) =>
 		? translate(`errors.${status}`)
 		: translate("errors.generic", { status });
 import type {
+	ApiToken,
+	LinkRelation,
+	Peer,
+	PersonLinkEntry,
+	RemotePerson,
 	ApiErrorBody,
 	Family,
 	FamilyInput,
@@ -269,6 +274,40 @@ export const api = {
 		update: (id: string, data: Partial<RelationshipInput>) =>
 			put<Relationship>(`/relationships/${id}`, data),
 		remove: (id: string) => del(`/relationships/${id}`),
+	},
+
+	tokens: {
+		list: () => get<ApiToken[]>("/tokens"),
+		create: (data: {
+			UserId: string;
+			Name: string;
+			ExpiresInDays: number | null;
+		}) => post<ApiToken>("/tokens", data),
+		remove: (id: string) => del(`/tokens/${id}`),
+	},
+
+	federation: {
+		peers: () => get<Peer[]>("/federation/peers"),
+		addPeer: (data: { Name: string; BaseUrl: string; Token: string }) =>
+			post<Peer>("/federation/peers", data),
+		checkPeer: (id: string) => post<Peer>(`/federation/peers/${id}/check`, {}),
+		removePeer: (id: string) => del(`/federation/peers/${id}`),
+		search: (peerId: string, q: string) =>
+			get<RemotePerson[]>(`/federation/peers/${peerId}/persons`, { q }),
+		person: (peerId: string, remoteId: string) =>
+			get<RemotePerson>(
+				`/federation/peers/${peerId}/persons/${encodeURIComponent(remoteId)}`,
+			),
+		links: (personId: string) =>
+			get<PersonLinkEntry[]>("/federation/links", { personId }),
+		addLink: (data: {
+			PersonId: string;
+			PeerId: string;
+			RemotePersonId: string;
+			Relation: LinkRelation;
+			Notes: string;
+		}) => post<PersonLinkEntry>("/federation/links", data),
+		removeLink: (id: string) => del(`/federation/links/${id}`),
 	},
 
 	gedcom: {

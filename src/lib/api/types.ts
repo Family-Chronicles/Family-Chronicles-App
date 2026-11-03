@@ -182,3 +182,54 @@ export interface ApiErrorBody {
 	message: string;
 	details?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] };
 }
+
+export interface ApiToken {
+	Id: string;
+	UserId: string;
+	Name: string;
+	CreatedAt: string;
+	LastUsedAt: string | null;
+	ExpiresAt: string | null;
+	/** Only present right after creating the token */
+	Token?: string;
+}
+
+export type PeerStatus = "Ok" | "Unreachable" | "Unauthorized";
+
+export interface Peer {
+	Id: string;
+	Name: string;
+	BaseUrl: string;
+	Status: PeerStatus;
+	CheckedAt: string;
+	CreatedAt: string;
+}
+
+export type LinkRelation = "SamePerson" | "Relative";
+
+export interface PersonLinkEntry {
+	Id: string;
+	PersonId: string;
+	PeerId: string;
+	PeerName: string | null;
+	RemotePersonId: string;
+	RemoteName: string;
+	Relation: LinkRelation;
+	Notes: string;
+	CreatedAt: string;
+}
+
+/** Basic data of a person on another instance */
+export type RemotePerson = Pick<
+	Person,
+	| "Id"
+	| "FirstNames"
+	| "MiddleNames"
+	| "LastNames"
+	| "BirthName"
+	| "Gender"
+	| "DateOfBirth"
+	| "PlaceOfBirth"
+	| "DateOfDeath"
+	| "PlaceOfDeath"
+>;
