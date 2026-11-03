@@ -423,6 +423,25 @@ export const de = {
 		unlinkMessage:
 			"Die Verknüpfung wird entfernt. Die Personen bleiben erhalten.",
 		show: "Ansehen",
+		mutual: "Auch umgekehrt verbinden",
+		mutualHint:
+			"Die andere Instanz bekommt eine Anfrage mit Lesezugriff auf diese Instanz und kann sie annehmen.",
+		message: "Nachricht an die andere Instanz (optional)",
+		requestSent: "Verbindungsanfrage an die andere Instanz gesendet.",
+		requestFailed:
+			"Verbunden, aber die Anfrage für die Gegenrichtung ist fehlgeschlagen: {error}",
+		requests: "Verbindungsanfragen",
+		requestsHint:
+			"Diese Instanzen möchten Personen dieser Instanz lesen können.",
+		accept: "Annehmen",
+		decline: "Ablehnen",
+		accepted: "Verbindung hergestellt.",
+		declined: "Anfrage abgelehnt.",
+		remoteTree: "Stammbaum",
+		fromInstance: "aus {instance}",
+		takeOver: "Übernehmen",
+		takeOverHint: "Legt eine Kopie dieser Person hier an und verknüpft beide.",
+		takenOver: "Person übernommen.",
 		remoteTitle: "{name} – {instance}",
 	},
 	notFound: {

@@ -38,7 +38,7 @@ export function lifespan(p: Person): string {
 	return [birth, death].filter(Boolean).join("  ");
 }
 
-export function years(p: Person): string {
+export function years(p: Pick<Person, "DateOfBirth" | "DateOfDeath">): string {
 	const b = p.DateOfBirth?.slice(0, 4) ?? "?";
 	const d = p.DateOfDeath?.slice(0, 4) ?? "";
 	return p.DateOfBirth || p.DateOfDeath ? `${b}–${d}` : "";

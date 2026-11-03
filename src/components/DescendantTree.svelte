@@ -5,16 +5,23 @@
 	import Self from "./DescendantTree.svelte";
 
 	/** Person and partners on top, children below */
-	let { node, root = false }: { node: DescendantNode; root?: boolean } =
-		$props();
+	let {
+		node,
+		root = false,
+		linkFor,
+	}: {
+		node: DescendantNode;
+		root?: boolean;
+		linkFor?: (p: { Id: string }) => string;
+	} = $props();
 </script>
 
 <div class="flex flex-col items-center">
 	<div class="flex items-center gap-2">
-		<TreeCard person={node.Person} {root} />
+		<TreeCard person={node.Person} {root} {linkFor} />
 		{#each node.Partners as partner (partner.Id)}
 			<span class="text-bark-400" aria-label={$t("tree.connectedWith")}>⚭</span>
-			<TreeCard person={partner} />
+			<TreeCard person={partner} {linkFor} />
 		{/each}
 	</div>
 	{#if node.Children.length}
@@ -31,7 +38,7 @@
 							: '-0.5rem'}"
 					></div>
 					<div class="absolute top-0 h-5 w-0.5 bg-bark-200"></div>
-					<Self node={child} />
+					<Self node={child} {linkFor} />
 				</div>
 			{/each}
 		</div>

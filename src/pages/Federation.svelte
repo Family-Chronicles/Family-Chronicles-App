@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { api } from "../lib/api/client";
-	import type { ApiToken, Peer, User } from "../lib/api/types";
+	import type { ApiToken, Peer, PeerRequest, User } from "../lib/api/types";
 	import { notify, notifyError } from "../lib/state/toasts";
 	import { autoReload } from "../lib/state/live";
 	import { t } from "../lib/i18n";
@@ -12,6 +12,7 @@
 	let peers = $state<Peer[]>([]);
 	let tokens = $state<ApiToken[]>([]);
 	let users = $state<User[]>([]);
+	let requests = $state<PeerRequest[]>([]);
 
 	const statusStyle = {
 		Ok: "bg-moss-500/15 text-moss-600",
@@ -22,10 +23,11 @@
 
 	async function load() {
 		try {
-			[peers, tokens, users] = await Promise.all([
+			[peers, tokens, users, requests] = await Promise.all([
 				api.federation.peers(),
 				api.tokens.list(),
 				api.users.list(),
+				api.federation.requests(),
 			]);
 		} catch (e) {
 			notifyError(e);
@@ -33,7 +35,7 @@
 	}
 	onMount(() => {
 		load();
-		return autoReload(["peers", "users"], load);
+		return autoReload(["peers", "users", "peerRequests", "apiTokens"], load);
 	});
 
 	// --- connect an instance ---
@@ -41,22 +43,33 @@
 	let peerName = $state("");
 	let peerUrl = $state("");
 	let peerToken = $state("");
+	let mutual = $state(false);
+	let message = $state("");
 	let busy = $state(false);
 
 	function openPeer() {
-		peerName = peerUrl = peerToken = "";
+		peerName = peerUrl = peerToken = message = "";
+		mutual = false;
 		peerOpen = true;
 	}
 
 	async function connect() {
 		busy = true;
 		try {
-			await api.federation.addPeer({
+			const peer = await api.federation.addPeer({
 				Name: peerName,
 				BaseUrl: peerUrl,
 				Token: peerToken,
+				Mutual: mutual,
+				Message: message,
 			});
 			notify($t("federation.connected"));
+			if (peer.RequestSent) notify($t("federation.requestSent"));
+			if (peer.RequestError)
+				notify(
+					$t("federation.requestFailed", { error: peer.RequestError }),
+					"error",
+				);
 			peerOpen = false;
 			await load();
 		} catch (e) {
@@ -78,6 +91,22 @@
 	async function removePeer(peer: Peer) {
 		await api.federation.removePeer(peer.Id);
 		notify($t("federation.removed"));
+		await load();
+	}
+
+	async function accept(r: PeerRequest) {
+		try {
+			await api.federation.acceptRequest(r.Id);
+			notify($t("federation.accepted"));
+			await load();
+		} catch (e) {
+			notifyError(e);
+		}
+	}
+
+	async function decline(r: PeerRequest) {
+		await api.federation.declineRequest(r.Id);
+		notify($t("federation.declined"));
 		await load();
 	}
 
@@ -137,6 +166,34 @@
 	title={$t("federation.title")}
 	subtitle={$t("federation.subtitle")}
 />
+
+{#if requests.length}
+	<section class="card mb-6 border-bark-300 p-5" data-testid="peer-requests">
+		<h2 class="text-lg font-semibold">{$t("federation.requests")}</h2>
+		<p class="mb-3 text-sm text-stone-600">{$t("federation.requestsHint")}</p>
+		<ul class="divide-y divide-bark-50">
+			{#each requests as r (r.Id)}
+				<li class="flex flex-wrap items-center gap-2 py-3">
+					<div class="min-w-0 flex-1">
+						<p class="font-medium text-bark-900">{r.Name}</p>
+						<p class="truncate text-xs text-stone-500">
+							{r.BaseUrl} · {day(r.CreatedAt)}
+						</p>
+						{#if r.Message}<p class="mt-1 text-sm text-stone-700">
+								„{r.Message}“
+							</p>{/if}
+					</div>
+					<button class="btn-primary" onclick={() => accept(r)}
+						>{$t("federation.accept")}</button
+					>
+					<button class="btn-ghost text-red-700" onclick={() => decline(r)}
+						>{$t("federation.decline")}</button
+					>
+				</li>
+			{/each}
+		</ul>
+	</section>
+{/if}
 
 <div class="grid gap-6 lg:grid-cols-2">
 	<section class="card p-5">
@@ -251,6 +308,27 @@
 				{$t("federation.peerTokenHint")}
 			</p>
 		</div>
+		<label class="flex items-start gap-2 text-sm">
+			<input
+				id="peer-mutual"
+				type="checkbox"
+				class="mt-1 accent-bark-700"
+				bind:checked={mutual}
+			/>
+			<span
+				>{$t("federation.mutual")}<span class="block text-xs text-stone-500"
+					>{$t("federation.mutualHint")}</span
+				></span
+			>
+		</label>
+		{#if mutual}
+			<div>
+				<label class="label" for="peer-message"
+					>{$t("federation.message")}</label
+				>
+				<input id="peer-message" class="input" bind:value={message} />
+			</div>
+		{/if}
 	</div>
 	{#snippet footer()}
 		<button class="btn-secondary" onclick={() => (peerOpen = false)}

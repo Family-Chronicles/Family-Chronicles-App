@@ -3,7 +3,27 @@
 	import { fullName, years } from "../lib/format";
 	import { href } from "../lib/router";
 
-	let { person, root = false }: { person: Person; root?: boolean } = $props();
+	type TreePerson = Pick<
+		Person,
+		| "Id"
+		| "FirstNames"
+		| "MiddleNames"
+		| "LastNames"
+		| "Gender"
+		| "DateOfBirth"
+		| "DateOfDeath"
+	>;
+
+	/** linkFor: where a card links to; default is the local family tree of the person */
+	let {
+		person,
+		root = false,
+		linkFor = (p: TreePerson) => href(`/persons/${p.Id}/tree`),
+	}: {
+		person: TreePerson;
+		root?: boolean;
+		linkFor?: (p: TreePerson) => string;
+	} = $props();
 	const border = {
 		Female: "border-rose-300",
 		Male: "border-sky-300",
@@ -13,7 +33,7 @@
 </script>
 
 <a
-	href={href(`/persons/${person.Id}/tree`)}
+	href={linkFor(person)}
 	class="block w-44 shrink-0 rounded-lg border-2 bg-white px-3 py-2 text-left shadow-sm transition hover:shadow-md {border[
 		person.Gender
 	]}"

@@ -9,6 +9,7 @@
 	} from "../lib/api/types";
 	import { formatDate, fullName } from "../lib/format";
 	import { canEdit } from "../lib/state/session";
+	import { href } from "../lib/router";
 	import { notify, notifyError } from "../lib/state/toasts";
 	import { t } from "../lib/i18n";
 	import Modal from "./Modal.svelte";
@@ -141,6 +142,12 @@
 						</div>
 						<button class="btn-ghost text-xs" onclick={() => show(link)}
 							>{$t("federation.show")}</button
+						>
+						<a
+							class="btn-ghost text-xs"
+							href={href(
+								`/federation/${link.PeerId}/persons/${encodeURIComponent(link.RemotePersonId)}/tree`,
+							)}>{$t("federation.remoteTree")}</a
 						>
 						{#if $canEdit}
 							<ConfirmButton
