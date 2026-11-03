@@ -3,7 +3,12 @@ import {
 	HttpError,
 	type HttpRequestConfig,
 } from "@bquery/bquery/reactive";
-import { clearSession, getToken } from "../state/session";
+import {
+	clearSession,
+	getRefreshToken,
+	getToken,
+	setSession,
+} from "../state/session";
 import { translate } from "../i18n";
 import { markOwnWrite } from "../state/ownWrites";
 
@@ -60,7 +65,6 @@ function toApiError(error: unknown): ApiError {
 	if (error instanceof HttpError && error.response) {
 		const status = error.response.status;
 		const body = error.response.data as Partial<ApiErrorBody> | undefined;
-		if (status === 401 && getToken()) clearSession();
 		const fieldErrors = body?.details?.fieldErrors ?? {};
 		const server = typeof body?.message === "string" ? body.message : "";
 		const message =
@@ -81,14 +85,11 @@ async function request<T>(config: HttpRequestConfig): Promise<T> {
 /** Like request, but also returns the response headers */
 async function requestFull<T>(
 	config: HttpRequestConfig,
+	retried = false,
 ): Promise<{ data: T; headers: Headers }> {
+	const isAuth = config.url?.startsWith("/auth") ?? false;
 	// logins and password changes do not change shared data
-	if (
-		config.method &&
-		config.method !== "GET" &&
-		!config.url?.startsWith("/auth")
-	)
-		markOwnWrite();
+	if (config.method && config.method !== "GET" && !isAuth) markOwnWrite();
 	try {
 		const response = await http.request<T>({
 			...config,
@@ -96,8 +97,39 @@ async function requestFull<T>(
 		});
 		return { data: response.data, headers: response.headers };
 	} catch (error) {
-		throw toApiError(error);
+		const apiError = toApiError(error);
+		// expired access token: get a new one with the refresh token and try once more
+		if (apiError.status === 401 && !isAuth && getToken()) {
+			if (!retried && (await refreshSession()))
+				return requestFull<T>(config, true);
+			clearSession();
+		}
+		throw apiError;
 	}
+}
+
+let refreshing: Promise<boolean> | null = null;
+
+/**
+ * Exchanges the refresh token for a new access token.
+ * Parallel callers share one request, because the refresh token is replaced each time.
+ */
+export function refreshSession(): Promise<boolean> {
+	const refreshToken = getRefreshToken();
+	if (!refreshToken) return Promise.resolve(false);
+	refreshing ??= http
+		.request<{ token: string; refreshToken: string; user: User }>({
+			url: `${API_URL}/auth/refresh`,
+			method: "POST",
+			body: { RefreshToken: refreshToken },
+		})
+		.then(({ data }) => {
+			setSession(data.token, data.user, data.refreshToken);
+			return true;
+		})
+		.catch(() => false)
+		.finally(() => (refreshing = null));
+	return refreshing;
 }
 
 const get = <T>(url: string, query?: Record<string, unknown>) =>
@@ -128,12 +160,26 @@ export interface Stats {
 export const api = {
 	stats: () => get<Stats>("/stats"),
 	login: (Email: string, Password: string) =>
-		post<{ token: string; user: User }>("/auth/login", { Email, Password }),
+		post<{ token: string; refreshToken: string; user: User }>("/auth/login", {
+			Email,
+			Password,
+		}),
+	logout: (RefreshToken: string) =>
+		post<{ success: boolean }>("/auth/logout", { RefreshToken }),
+	authConfig: () => get<{ passwordReset: boolean }>("/auth/config"),
+	requestPasswordReset: (Email: string) =>
+		post<{ success: boolean }>("/auth/password-reset", { Email }),
+	confirmPasswordReset: (Token: string, NewPassword: string) =>
+		post<{ success: boolean }>("/auth/password-reset/confirm", {
+			Token,
+			NewPassword,
+		}),
 	me: () => get<User>("/auth/me"),
 	changePassword: (CurrentPassword: string, NewPassword: string) =>
 		put<{ success: boolean }>("/auth/me/password", {
 			CurrentPassword,
 			NewPassword,
+			RefreshToken: getRefreshToken() ?? undefined,
 		}),
 
 	users: {

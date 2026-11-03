@@ -5,6 +5,7 @@
 	import { currentRoute, type PageMeta } from "./lib/router";
 	import { session, hasRole } from "./lib/state/session";
 	import Login from "./pages/Login.svelte";
+	import ResetPassword from "./pages/ResetPassword.svelte";
 	import Layout from "./components/Layout.svelte";
 	import Toasts from "./components/Toasts.svelte";
 	import Forbidden from "./pages/Forbidden.svelte";
@@ -21,7 +22,10 @@
 	});
 </script>
 
-{#if !$session}
+{#if $currentRoute.path === "/reset-password"}
+	<!-- reachable without login, from the link in the reset email -->
+	<ResetPassword />
+{:else if !$session}
 	<Login />
 {:else}
 	<Layout>

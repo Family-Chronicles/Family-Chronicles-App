@@ -73,6 +73,22 @@ export const de = {
 		submitting: "Anmelden …",
 		wrong: "E-Mail oder Passwort ist falsch.",
 	},
+	reset: {
+		forgot: "Passwort vergessen?",
+		requestTitle: "Passwort zurücksetzen",
+		requestHint:
+			"Gib deine E-Mail-Adresse ein. Wenn sie bekannt ist, bekommst du einen Link für ein neues Passwort.",
+		send: "Link senden",
+		sent: "Wenn die Adresse bekannt ist, ist eine E-Mail unterwegs. Der Link ist eine Stunde gültig.",
+		back: "Zurück zur Anmeldung",
+		title: "Neues Passwort festlegen",
+		new: "Neues Passwort",
+		repeat: "Wiederholen",
+		submit: "Passwort speichern",
+		done: "Dein Passwort wurde geändert. Du kannst dich jetzt anmelden.",
+		invalid:
+			"Der Link ist ungültig oder abgelaufen. Fordere bitte einen neuen an.",
+	},
 	dashboard: {
 		welcome: "Willkommen, {name}",
 		intro: "Hier ist der aktuelle Stand eurer Familienchronik.",
@@ -359,6 +375,7 @@ export const de = {
 		users: "Benutzer",
 		account: "Mein Konto",
 		gedcom: "Import & Export",
+		resetPassword: "Passwort zurücksetzen",
 		notFound: "Nicht gefunden",
 	},
 };

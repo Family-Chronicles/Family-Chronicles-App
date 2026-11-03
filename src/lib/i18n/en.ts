@@ -74,6 +74,21 @@ export const en: Messages = {
 		submitting: "Logging in …",
 		wrong: "Email or password is wrong.",
 	},
+	reset: {
+		forgot: "Forgot password?",
+		requestTitle: "Reset password",
+		requestHint:
+			"Enter your email address. If it is known, you will get a link to set a new password.",
+		send: "Send link",
+		sent: "If the address is known, an email is on its way. The link is valid for one hour.",
+		back: "Back to login",
+		title: "Set a new password",
+		new: "New password",
+		repeat: "Repeat",
+		submit: "Save password",
+		done: "Your password has been changed. You can log in now.",
+		invalid: "The link is invalid or has expired. Please request a new one.",
+	},
 	dashboard: {
 		welcome: "Welcome, {name}",
 		intro: "Here is the current state of your family chronicle.",
@@ -354,6 +369,7 @@ export const en: Messages = {
 		users: "Users",
 		account: "My account",
 		gedcom: "Import & export",
+		resetPassword: "Reset password",
 		notFound: "Not found",
 	},
 };

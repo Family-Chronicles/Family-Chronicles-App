@@ -1,5 +1,5 @@
 import { effect, signal } from "@bquery/bquery/reactive";
-import { API_URL } from "../api/client";
+import { API_URL, refreshSession } from "../api/client";
 import { sessionSignal } from "./session";
 import { fromSignal } from "./svelte";
 import { isOwnWrite } from "./ownWrites";
@@ -45,8 +45,12 @@ function connect(token: string) {
 	socket.onclose = (event) => {
 		connectedSignal.value = false;
 		socket = null;
-		// 4001: token invalid – the next login opens a new connection
-		if (event.code !== 4001 && sessionSignal.peek()?.token === token) {
+		// 4001: token expired or invalid – renew it; the new token opens a new connection
+		if (event.code === 4001) {
+			void refreshSession();
+			return;
+		}
+		if (sessionSignal.peek()?.token === token) {
 			attempts++;
 			retry = setTimeout(
 				() => connect(token),

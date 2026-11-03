@@ -3,7 +3,10 @@ import type { Role, User } from "../api/types";
 import { fromSignal } from "./svelte";
 
 interface Session {
+	/** Short-lived access token */
 	token: string;
+	/** Long-lived token to get new access tokens (missing for old sessions) */
+	refreshToken?: string;
 	user: User;
 }
 
@@ -31,8 +34,16 @@ export function getToken(): string | null {
 	return sessionSignal.peek()?.token ?? null;
 }
 
-export function setSession(token: string, user: User): void {
-	sessionSignal.value = { token, user };
+export function setSession(
+	token: string,
+	user: User,
+	refreshToken?: string,
+): void {
+	sessionSignal.value = { token, user, refreshToken };
+}
+
+export function getRefreshToken(): string | null {
+	return sessionSignal.peek()?.refreshToken ?? null;
 }
 
 export function updateUser(user: User): void {
