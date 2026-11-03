@@ -233,3 +233,22 @@ export type RemotePerson = Pick<
 	| "DateOfDeath"
 	| "PlaceOfDeath"
 >;
+
+export interface RemoteTree {
+	Root: RemotePerson;
+	Ancestors: { Person: RemotePerson; Parents: RemoteTree["Ancestors"][] };
+	Descendants: {
+		Person: RemotePerson;
+		Partners: RemotePerson[];
+		Children: RemoteTree["Descendants"][];
+	};
+	Siblings: RemotePerson[];
+}
+
+export interface PeerRequest {
+	Id: string;
+	Name: string;
+	BaseUrl: string;
+	Message: string;
+	CreatedAt: string;
+}

@@ -15,6 +15,7 @@ import NotFound from "../pages/NotFound.svelte";
 import Gedcom from "../pages/Gedcom.svelte";
 import ResetPassword from "../pages/ResetPassword.svelte";
 import Federation from "../pages/Federation.svelte";
+import RemoteTree from "../pages/RemoteTree.svelte";
 
 // Pages either take `params` or no props at all
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,6 +55,11 @@ export const router = createRouter({
 		route("/account", Account, "titles.account"),
 		route("/gedcom", Gedcom, "titles.gedcom", "Editor"),
 		route("/federation", Federation, "titles.federation", "Admin"),
+		route(
+			"/federation/:peerId/persons/:remoteId/tree",
+			RemoteTree,
+			"titles.tree",
+		),
 		route("/reset-password", ResetPassword, "titles.resetPassword"),
 		route("*", NotFound, "titles.notFound"),
 	],

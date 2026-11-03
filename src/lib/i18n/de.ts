@@ -341,8 +341,8 @@ export const de = {
 		subtitle: "Stammbäume im GEDCOM-Format mit anderen Programmen austauschen.",
 		importTitle: "GEDCOM importieren",
 		importHint:
-			"Personen und Beziehungen aus einer .ged-Datei (GEDCOM 5.5.1, z. B. aus Ancestry, MyHeritage, Gramps) werden hinzugefügt. Vorhandene Daten werden nicht zusammengeführt – derselbe Import zweimal erzeugt Duplikate.",
-		file: "GEDCOM-Datei",
+			"Personen und Beziehungen aus einer .ged-Datei (GEDCOM 5.5.1, z. B. aus Ancestry, MyHeritage, Gramps) werden hinzugefügt – mit einer ZIP-Datei samt Bildern auch die Medien. Vorhandene Daten werden nicht zusammengeführt – derselbe Import zweimal erzeugt Duplikate.",
+		file: "GEDCOM-Datei (.ged) oder ZIP mit Medien",
 		familyName: "Familie anlegen (optional)",
 		familyHint: "Alle importierten Personen werden Mitglied dieser Familie.",
 		import: "Importieren",
@@ -352,8 +352,10 @@ export const de = {
 		openFamily: "Zur Familie",
 		exportTitle: "GEDCOM exportieren",
 		exportHint:
-			"Lädt alle Personen und Beziehungen als GEDCOM 5.5.1 (UTF-8) herunter. Die Datei enthält persönliche Daten lebender Personen – bitte sorgsam damit umgehen.",
-		export: "Exportieren",
+			"Lädt alle Personen und Beziehungen als GEDCOM 5.5.1 (UTF-8) herunter, auf Wunsch als ZIP mit allen Bildern und Dokumenten. Die Datei enthält persönliche Daten lebender Personen – bitte sorgsam damit umgehen.",
+		export: "Nur GEDCOM (.ged)",
+		exportZip: "Mit Bildern und Dokumenten (ZIP)",
+		resultMedia: "{count} Bilder und Dokumente übernommen.",
 		exported: "Export heruntergeladen.",
 	},
 	federation: {
@@ -421,6 +423,25 @@ export const de = {
 		unlinkMessage:
 			"Die Verknüpfung wird entfernt. Die Personen bleiben erhalten.",
 		show: "Ansehen",
+		mutual: "Auch umgekehrt verbinden",
+		mutualHint:
+			"Die andere Instanz bekommt eine Anfrage mit Lesezugriff auf diese Instanz und kann sie annehmen.",
+		message: "Nachricht an die andere Instanz (optional)",
+		requestSent: "Verbindungsanfrage an die andere Instanz gesendet.",
+		requestFailed:
+			"Verbunden, aber die Anfrage für die Gegenrichtung ist fehlgeschlagen: {error}",
+		requests: "Verbindungsanfragen",
+		requestsHint:
+			"Diese Instanzen möchten Personen dieser Instanz lesen können.",
+		accept: "Annehmen",
+		decline: "Ablehnen",
+		accepted: "Verbindung hergestellt.",
+		declined: "Anfrage abgelehnt.",
+		remoteTree: "Stammbaum",
+		fromInstance: "aus {instance}",
+		takeOver: "Übernehmen",
+		takeOverHint: "Legt eine Kopie dieser Person hier an und verknüpft beide.",
+		takenOver: "Person übernommen.",
 		remoteTitle: "{name} – {instance}",
 	},
 	notFound: {

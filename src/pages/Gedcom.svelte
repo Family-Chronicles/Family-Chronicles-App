@@ -34,14 +34,14 @@
 		}
 	}
 
-	async function runExport() {
+	async function runExport(withMedia: boolean) {
 		exporting = true;
 		try {
-			const blob = await api.gedcom.export();
+			const blob = await api.gedcom.export(withMedia);
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = `family-chronicles-${new Date().toISOString().slice(0, 10)}.ged`;
+			link.download = `family-chronicles-${new Date().toISOString().slice(0, 10)}.${withMedia ? "zip" : "ged"}`;
 			link.click();
 			setTimeout(() => URL.revokeObjectURL(url), 1000);
 			notify($t("gedcom.exported"));
@@ -65,7 +65,7 @@
 				id="ged-file"
 				class="input"
 				type="file"
-				accept=".ged,.gedcom,text/plain"
+				accept=".ged,.gedcom,.zip,text/plain,application/zip"
 				bind:files
 				required
 			/>
@@ -91,6 +91,9 @@
 						relationships: result.Relationships,
 					})}
 				</p>
+				{#if result.Media}<p class="text-stone-700">
+						{$t("gedcom.resultMedia", { count: result.Media })}
+					</p>{/if}
 				{#if result.FamilyId}
 					<a
 						class="link mt-1 inline-block"
@@ -111,8 +114,17 @@
 	<section class="card space-y-4 p-5">
 		<h2 class="text-lg font-semibold">{$t("gedcom.exportTitle")}</h2>
 		<p class="text-sm text-stone-600">{$t("gedcom.exportHint")}</p>
-		<button class="btn-secondary" disabled={exporting} onclick={runExport}
-			>{$t("gedcom.export")}</button
-		>
+		<div class="flex flex-wrap gap-2">
+			<button
+				class="btn-secondary"
+				disabled={exporting}
+				onclick={() => runExport(false)}>{$t("gedcom.export")}</button
+			>
+			<button
+				class="btn-secondary"
+				disabled={exporting}
+				onclick={() => runExport(true)}>{$t("gedcom.exportZip")}</button
+			>
+		</div>
 	</section>
 </div>

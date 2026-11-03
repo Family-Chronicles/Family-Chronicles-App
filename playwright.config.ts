@@ -32,6 +32,8 @@ export default defineConfig({
 			env: {
 				DB_DRIVER: "memory",
 				PORT: "8080",
+				PUBLIC_URL: "http://localhost:8080",
+				INSTANCE_NAME: "Familie A",
 				JWT_SECRET: "e2e-secret",
 				ADMIN_PASSWORD: ADMIN.password,
 				RATE_LIMIT_PER_MINUTE: "100000",
@@ -41,7 +43,8 @@ export default defineConfig({
 		{
 			// a second instance, for the federation test
 			// waits for the build of the first server command
-			command: "sh -c 'until [ -f dist/server.js ]; do sleep 1; done; node dist/server.js'",
+			command:
+				"sh -c 'until [ -f dist/server.js ]; do sleep 1; done; node dist/server.js'",
 			cwd: SERVER_DIR,
 			url: "http://localhost:8081/api/v1/health",
 			reuseExistingServer: !process.env.CI,
@@ -49,6 +52,8 @@ export default defineConfig({
 			env: {
 				DB_DRIVER: "memory",
 				PORT: "8081",
+				PUBLIC_URL: "http://localhost:8081",
+				INSTANCE_NAME: "Familie B",
 				JWT_SECRET: "e2e-secret-b",
 				ADMIN_PASSWORD: ADMIN.password,
 				RATE_LIMIT_PER_MINUTE: "100000",

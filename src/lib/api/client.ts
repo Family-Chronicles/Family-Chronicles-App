@@ -22,7 +22,9 @@ import type {
 	LinkRelation,
 	Peer,
 	PersonLinkEntry,
+	PeerRequest,
 	RemotePerson,
+	RemoteTree,
 	ApiErrorBody,
 	Family,
 	FamilyInput,
@@ -288,8 +290,17 @@ export const api = {
 
 	federation: {
 		peers: () => get<Peer[]>("/federation/peers"),
-		addPeer: (data: { Name: string; BaseUrl: string; Token: string }) =>
-			post<Peer>("/federation/peers", data),
+		addPeer: (data: {
+			Name: string;
+			BaseUrl: string;
+			Token: string;
+			Mutual?: boolean;
+			Message?: string;
+		}) =>
+			post<Peer & { RequestSent: boolean; RequestError: string | null }>(
+				"/federation/peers",
+				data,
+			),
 		checkPeer: (id: string) => post<Peer>(`/federation/peers/${id}/check`, {}),
 		removePeer: (id: string) => del(`/federation/peers/${id}`),
 		search: (peerId: string, q: string) =>
@@ -298,6 +309,20 @@ export const api = {
 			get<RemotePerson>(
 				`/federation/peers/${peerId}/persons/${encodeURIComponent(remoteId)}`,
 			),
+		tree: (peerId: string, remoteId: string, depth = 3) =>
+			get<RemoteTree>(
+				`/federation/peers/${peerId}/persons/${encodeURIComponent(remoteId)}/tree`,
+				{ depth },
+			),
+		importPerson: (peerId: string, remoteId: string) =>
+			post<{ Person: Person; Link: PersonLinkEntry }>(
+				`/federation/peers/${peerId}/persons/${encodeURIComponent(remoteId)}/import`,
+				{},
+			),
+		requests: () => get<PeerRequest[]>("/federation/requests"),
+		acceptRequest: (id: string) =>
+			post<Peer>(`/federation/requests/${id}/accept`, {}),
+		declineRequest: (id: string) => del(`/federation/requests/${id}`),
 		links: (personId: string) =>
 			get<PersonLinkEntry[]>("/federation/links", { personId }),
 		addLink: (data: {
@@ -317,6 +342,7 @@ export const api = {
 			return request<{
 				Persons: number;
 				Relationships: number;
+				Media: number;
 				FamilyId: string | null;
 				Warnings: string[];
 			}>({
@@ -326,8 +352,13 @@ export const api = {
 				query: familyName ? { family: familyName } : undefined,
 			});
 		},
-		export: () =>
-			request<Blob>({ url: "/gedcom/export", method: "GET", parseAs: "blob" }),
+		export: (withMedia = false) =>
+			request<Blob>({
+				url: "/gedcom/export",
+				method: "GET",
+				query: withMedia ? { format: "zip" } : undefined,
+				parseAs: "blob",
+			}),
 	},
 
 	media: {
